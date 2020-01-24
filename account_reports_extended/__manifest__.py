@@ -18,6 +18,7 @@
 
     # Views
     'data': [
+        'data/account_financial_report_data.xml'
     ],
 
     # Techical

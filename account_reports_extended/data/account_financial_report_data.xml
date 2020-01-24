@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Total Operational Profit Section for Profit and Loss Report -->
+        <record id="account_financial_report_totaloperationalprofit0"
+            model="account.financial.html.report.line">
+            <field name="name">Total Operational Profit</field>
+            <field name="code">TOP</field>
+            <field name="formulas">balance = INC.balance - LEX.balance</field>
+            <field name="parent_id" eval="False"/>
+            <field name="financial_report_id"
+                ref="account_reports.account_financial_report_profitandloss0"/>
+            <field name="sequence" eval="3"/>
+            <field name="level" eval="0" />
+        </record>
+
+        <!-- Other Income Section for Profit and Loss Report  -->
+        <record id="account_reports.account_financial_report_other_income0"
+            model="account.financial.html.report.line">
+            <field name="parent_id" eval="False"/>
+            <field name="financial_report_id"
+                ref="account_reports.account_financial_report_profitandloss0"/>
+            <field name="sequence" eval="4"/>
+            <field name="level" eval="0"/>
+        </record>
+
+        <!-- Net Profit Section for Profit and Loss Report  -->
+        <record id="account_reports.account_financial_report_net_profit0"
+            model="account.financial.html.report.line">
+            <field name="sequence" eval="5"/>
+            <field name="formulas">balance = OIN.balance + TOP.balance</field>
+        </record>
+    </data>
+</odoo>
