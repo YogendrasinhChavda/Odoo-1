@@ -8,6 +8,10 @@
         <field name="inherit_id"
             ref="account.view_account_invoice_filter"/>
         <field name="arch" type="xml">
+            <field name="number" position="after">
+                <field name="name" string="Customer Reference"/>
+                <!-- <field name="x_studio_customer_reference"/> -->
+            </field>
             <filter name="draft" position="after">
                 <filter name="on_hold_filter" string="On Hold"
                     domain="[('state','=','on_hold')]"/>

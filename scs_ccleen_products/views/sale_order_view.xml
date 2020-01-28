@@ -39,4 +39,29 @@
             </field>
         </field>
     </record>
+
+    <!-- Overwritten Quotation Search View -->
+    <record id="sale.sale_order_view_search_inherit_quotation" model="ir.ui.view">
+        <field name="name">sale.order.search.inherit.quotation</field>
+        <field name="model">sale.order</field>
+        <field name="mode">primary</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="client_order_ref"/>
+                <!--    Below field is took by odoo studio so, we need to move that
+                through the code in future  -->
+                <field name="x_studio_field_PGOCR"/>
+            </xpath>
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="replace">
+                <separator/>
+                <filter string="My Quotations" name="my_quotation" domain="[('user_id', '=', uid)]"/>
+                <separator/>
+                <filter string="Quotations" name="draft" domain="[('state','in',('draft', 'sent'))]"/>
+                <filter string="Sales Orders" name="sales" domain="[('state','in',('sale','done'))]"/>
+                <separator/>
+                <filter string="Order Date" name="filter_order_date" date="date_order"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>
