@@ -51,7 +51,7 @@
 <!--                                     <img src="https://ci5.googleusercontent.com/proxy/kKca2Yb9ZHUXGonBTsBz5H9t4PDZe0WUXaOf7LU04W2YT3nTw5eINKulnwXQjtiV4cqtZyPZMYFFVOa6abLz6-EPwVzBn2Slh3jdEpOUPAZ3I0SqIg5Lvc9lp4m05tMx84LsnMICd7g88jiUTG8=s0-d-e1-ft#https://system.na2.netsuite.com/core/media/media.nl?id=719&amp;c=4514937&amp;h=ff4ba428522156afb694" style="margin:7px" class="CToWUd"/> -->
                                     <img t-if="o.statement_id.company_id.logo"
                                         t-att-src="image_data_uri(o.statement_id.company_id.logo)"
-                                        class="CToWUd"
+                                        style="max-height: 100px;" class="CToWUd"
                                         alt="Logo"/>
                                 <!--     <img src="" style="margin:7px" class="CToWUd"/> -->
                                 </div>
