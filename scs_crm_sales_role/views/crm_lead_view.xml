@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Inherited CRM Opportunity Form view from CRM -->
+        <record id="crm_case_form_view_oppor_scs_inherit" model="ir.ui.view">
+            <field name="name">crm.oppor.form.scs.inherit</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.crm_case_form_view_oppor"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='team_id']" position="after">
+                    <field name="cust_state_id" placeholder="Customer State.."/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Inherited CRM Opportunity Search view from CRM -->
+        <record id="view_crm_case_opportunities_filter_scs_inherit" model="ir.ui.view">
+            <field name="name">crm.oppor.search.view.scs.inherit</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="cust_state_id" string="Customer State"/>
+                </xpath>
+                <xpath expr="//filter[@name='stage']" position="before">
+                    <filter name="cust_state_id" string="Customer State"
+                        context="{'group_by':'cust_state_id'}"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Inherited CRM Lead Form view from CRM -->
+        <record id="crm_case_form_view_leads_scs_inherit" model="ir.ui.view">
+            <field name="name">crm.lead.form.scs.inherit</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.crm_case_form_view_leads"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='website']" position="after">
+                    <field name="cust_state_id" placeholder="Customer State.."/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>
