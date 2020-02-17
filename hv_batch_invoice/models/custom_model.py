@@ -303,7 +303,6 @@ class AccountPayment(models.Model):
             self._get_counterpart_move_line_vals(self.invoice_ids))
         counterpart_aml_dict.update({'currency_id': currency_id})
         counterpart_aml = aml_obj.create(counterpart_aml_dict)
-
         # Reconcile with the invoices
         if self.payment_difference_handling == 'reconcile' and \
                 self.payment_difference:
@@ -418,7 +417,7 @@ class hv_batch_invoice(models.Model):
                                  _company_default_get('batch.invoice'))
 
     @api.multi
-    @api.depends('invoice_ids', 'customer_id')
+    @api.depends('invoice_ids', 'customer_id', 'customer_id.rebate')
     def _compute_total(self):
         for batch_iv in self:
             if batch_iv.state in ['draft', 'open']:

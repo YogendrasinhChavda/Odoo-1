@@ -27,7 +27,8 @@
         'data/account.group.csv',
         'data/account.account.template.csv',
         'data/account_chart_template_data.xml',
-        'data/account.account.tag.csv',
+        # We commented Ccleen Tags to fix the Financial report issue.
+        # 'data/account.account.tag.csv',
         'data/account.tax.group.csv',
         'data/account.tax.template.csv',
         'data/account_fiscal_position_tax_template_data.xml',

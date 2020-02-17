@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sales_billed_invoice_target_usr,access.sales.billed.invoice.target.usr,model_sales_billed_invoice_target,,1,1,1,1
+access_sales_billed_invoice_target_team_usr,access.sales.billed.invoice.target.team.usr,model_sales_billed_invoice_target_team,,1,1,1,1

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Inherited CRM Team Tree view from sales Team module -->
+        <record id="crm_team_view_tree_scs_inherit" model="ir.ui.view">
+            <field name="name">crm.team.tree.scs.inherit</field>
+            <field name="model">crm.team</field>
+            <field name="field_parent">child_ids</field>
+            <field name="inherit_id" ref="sales_team.crm_team_view_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="levels" required="1"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Inherited CRM Team form view from sales Team module -->
+         <record id="crm_team_view_form_scs_inherit" model="ir.ui.view">
+            <field name="name">crm.team.form.scs.inherit</field>
+            <field name="model">crm.team</field>
+            <field name="inherit_id" ref="sales_team.crm_team_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='team_type']" position="after">
+                    <field name="levels" required="1"/>
+                </xpath>
+                <xpath expr="//field[@name='member_ids']" position="attributes">
+                    <attribute name="options"/>
+                </xpath>
+                <xpath expr="//notebook/page[@name='members']" position="after">
+                    <page name="region_team_ids" string="Region Teams" attrs="{'invisible': [('levels', '!=', 'top_level')]}">
+                        <field name="region_team_ids"
+                            context="{'default_levels': 'second_level'}">
+                            <tree string="Region Teams">
+                                <field name="name"/>
+                                <field name="levels" required="1"/>
+                                <field name="team_type"/>
+                                <field name="active" invisible="1"/>
+                                <field name="user_id"/>
+                                <field name="parent_id" invisible="1"/>
+                            </tree>
+                        </field>
+                    </page>
+                    <page name="states_team_ids" string="States Teams" attrs="{'invisible': [('levels', '!=', 'second_level')]}">
+                        <field name="states_team_ids"
+                            context="{'default_levels': 'third_level'}">
+                            <tree string="States Teams">
+                                <field name="name"/>
+                                <field name="levels" required="1"/>
+                                <field name="team_type"/>
+                                <field name="active" invisible="1"/>
+                                <field name="user_id"/>
+                                <field name="parent_id" invisible="1"/>
+                            </tree>
+                        </field>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
