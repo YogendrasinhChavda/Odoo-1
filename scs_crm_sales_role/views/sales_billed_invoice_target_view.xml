@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Form View Of Sales Billed Invoice Target Team -->
+    <record id="view_sales_billed_invoice_target_team_form" model="ir.ui.view">
+        <field name="name">sales.billed.invoice.target.team.form.view</field>
+        <field name="model">sales.billed.invoice.target.team</field>
+        <field name="arch" type="xml">
+            <form string="Sales Order vs Billed Invoice Target Team">
+                <sheet>
+                    <group>
+                        <field name="team_id" required="1"/>
+                        <field name="sales_person_target"/>
+                        <field name="time_span" required="1"/>
+                        <!-- <field name="start_date" required="1"/>
+                        <field name="end_date" required="1"/> -->
+                        <field name="sales_ord_trg_achived"/>
+                        <field name="billed_inv_trg_achived"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View Of Sales Billed Invoice Target Team -->
+    <record id="view_sales_billed_invoice_target_team_tree" model="ir.ui.view">
+        <field name="name">sales.billed.invoice.target.tree.view</field>
+        <field name="model">sales.billed.invoice.target.team</field>
+        <field name="arch" type="xml">
+            <tree string="Sales Order vs Billed Invoice Target">
+                <field name="team_id" required="1"/>
+                <field name="sales_person_target"/>
+                <field name="time_span"/>
+                <field name="sales_ord_trg_achived"/>
+                <field name="billed_inv_trg_achived"/>
+            </tree>
+        </field>
+    </record>
+
+
+    <!-- Action Of Sales Billed Invoice Target Team -->
+    <record id="action_view_sales_billed_invoice_target_team"
+            model="ir.actions.act_window">
+        <field name="name">Sales Order vs Billed Invoice Team</field>
+        <field name="res_model">sales.billed.invoice.target.team</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Menu Item Of Sales Target -->
+    <menuitem id="menu_sales_target"
+            name="Sales Target"
+            sequence="3"
+            parent="crm.crm_menu_root"/>
+
+    <!-- MenuItem Of Sales Billed Invoice Target Team -->
+    <menuitem id="menu_sales_billed_invoice_target_team"
+        name="Sales Order vs Billed Invoice Team"
+        parent="menu_sales_target" sequence="2"
+        action="action_view_sales_billed_invoice_target_team"/>
+
+    <!-- Form View Of Sales Billed Invoice Target -->
+    <record id="view_sales_billed_invoice_target_form" model="ir.ui.view">
+        <field name="name">sales.billed.invoice.target.form.view</field>
+        <field name="model">sales.billed.invoice.target</field>
+        <field name="arch" type="xml">
+            <form string="Sales Order vs Billed Invoice Target">
+                <sheet>
+                    <group>
+                        <field name="team_id" required="1"/>
+                        <field name="sales_user_id" required="1"
+                            domain="[('id', 'in', sales_user_ids)]"/>
+                        <field name="sales_person_target"/>
+                        <field name="time_span" required="1"/>
+                        <!-- <field name="start_date" required="1"/>
+                        <field name="end_date" required="1"/> -->
+                        <field name="sales_ord_trg_achived"/>
+                        <field name="billed_inv_trg_achived"/>
+                    </group>
+                    <notebook>
+                        <page string="Sales Persons" invisible="1">
+                            <field name="sales_user_ids" nolable="1" col="4" colspan="4"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View Of Sales Billed Invoice Target -->
+    <record id="view_sales_billed_invoice_target_tree" model="ir.ui.view">
+        <field name="name">sales.billed.invoice.target.tree.view</field>
+        <field name="model">sales.billed.invoice.target</field>
+        <field name="arch" type="xml">
+            <tree string="Sales Order vs Billed Invoice Target">
+                <field name="team_id" required="1"/>
+                <field name="sales_user_id" required="1"/>
+                <field name="sales_person_target"/>
+                <field name="time_span"/>
+                <field name="sales_ord_trg_achived"/>
+                <field name="billed_inv_trg_achived"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action Of Sales Billed Invoice Target -->
+    <record id="action_view_sales_billed_invoice_target"
+            model="ir.actions.act_window">
+        <field name="name">Sales Order vs Billed Invoice Person</field>
+        <field name="res_model">sales.billed.invoice.target</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- MenuItem Of Sales Billed Invoice Target -->
+    <menuitem id="menu_sales_billed_invoice_target"
+        name="Sales Order vs Billed Invoice Person"
+        parent="menu_sales_target" sequence="2"
+        action="action_view_sales_billed_invoice_target"/>
+</odoo>

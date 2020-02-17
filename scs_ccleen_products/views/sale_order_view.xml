@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherited Quotation Tree view to add Quotation number -->
+    <record id="view_quotation_tree_scs_inherit"
+            model="ir.ui.view">
+        <field name="name">sale.order.tree</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="client_order_ref"/>
+            </field>
+            <field name="name" position="before">
+                <field name="quote_number" attrs="{'invisible': [('client_order_ref', '!=', False)]}"/>
+            </field>
+            <field name="name" position="attributes">
+                <attribute name="string">Sale Order Number</attribute>
+                <attribute name="attrs">{'invisible': [('client_order_ref', '=', False)]}</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- Inherited sale order form view from sale module -->
+   <record id="view_order_form_scs_inherit" model="ir.ui.view">
+        <field name="name">sale.order.form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_shipping_id" position="after">
+                <field name="client_order_ref"/>
+            </field>
+            <field name="name" position="attributes">
+                <attribute name="string">Sale Order Number</attribute>
+                <attribute name="attrs">{'invisible': [('client_order_ref', '=', False)]}</attribute>
+            </field>
+            <field name="name" position="after">
+                <field name="quote_number" readonly="1"
+                attrs="{'invisible': [('client_order_ref', '!=', False)]}"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Overwritten Quotation Search View -->
+    <record id="sale.sale_order_view_search_inherit_quotation" model="ir.ui.view">
+        <field name="name">sale.order.search.inherit.quotation</field>
+        <field name="model">sale.order</field>
+        <field name="mode">primary</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="client_order_ref"/>
+                <!--    Below field is took by odoo studio so, we need to move that
+                through the code in future  -->
+                <field name="x_studio_field_PGOCR"/>
+            </xpath>
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="replace">
+                <separator/>
+                <filter string="My Quotations" name="my_quotation" domain="[('user_id', '=', uid)]"/>
+                <separator/>
+                <filter string="Quotations" name="draft" domain="[('state','in',('draft', 'sent'))]"/>
+                <filter string="Sales Orders" name="sales" domain="[('state','in',('sale','done'))]"/>
+                <separator/>
+                <filter string="Order Date" name="filter_order_date" date="date_order"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

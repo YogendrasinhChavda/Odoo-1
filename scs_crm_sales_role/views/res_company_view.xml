@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Inherited Company Form view -->
+        <record id="view_company_form_scs_inherit" model="ir.ui.view">
+            <field name="name">view.company.form.scs.inherit</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Script Buttons">
+                        <separator name="Don't Click on this button if you are not aware."/>
+                        <button name="update_sales_person_in_invoice_lines"
+                            string="Update Sales Person In Invoice Lines"
+                            type="object"
+                            class="oe_highlight"/>
+                        <button name="update_taxes_tags"
+                            string="Update Taxes Tags For Ccleen Company"
+                            type="object"
+                            class="oe_highlight"/>
+                        
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
