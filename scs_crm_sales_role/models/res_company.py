@@ -23,7 +23,7 @@ class ResCompany(models.Model):
                     cust_inv.invoice_line_ids.write({
                         'x_studio_sales_person': sales_person
                     })
-        print("\n DONE ::::::::::")
+        print("\n DONE ::::LINES::::::")
 
     @api.multi
     def update_taxes_tags(self):
@@ -48,4 +48,4 @@ class ResCompany(models.Model):
                     ('name', 'ilike', tax.name)])
                 if taxes_same:
                     taxes_same.write({'tag_ids': [(6, 0, tags)]})
-        print("\n DONE ::::::::::")
+        print("\n DONE ::::TAXES::::::")
