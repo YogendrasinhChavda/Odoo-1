@@ -142,7 +142,6 @@ class AccountReport(models.AbstractModel):
         profit_losse_action = self.env.ref('account_reports.account_financial_report_profitandloss0')
         if profit_losse_action and profit_losse_action.id == self.id:
             is_profit = True
-        # print("????????????????????//", line_id)
         lines = self.with_context({'is_profit': is_profit})._get_lines(options, line_id=line_id)
         if options.get('hierarchy'):
             lines = self._create_hierarchy(lines)
@@ -206,7 +205,7 @@ class ReportAccountFinancialReport(models.Model):
         if options.get('comparison') and options['comparison'].get('periods'):
             for period in options['comparison']['periods']:
                 columns += [{'name': period.get('string'), 'class': 'number'}]
-            if options['comparison'].get('number_period') == 1 and not options.get('groups'):
+            if not self._context.get('is_profit') and options['comparison'].get('number_period') == 1 and not options.get('groups'):
                 columns += [{'name': '%', 'class': 'number'}]
         if self._context.get('is_profit'):
             columns += [{'name': '%', 'class': 'number'}]
@@ -265,7 +264,6 @@ class AccountFinancialReportLine(models.Model):
         currency_precision = self.env.user.company_id.currency_id.rounding
 
         # build comparison table
-        # print("???????????????/", self._context)
         is_profit = False
         opinic_total = 0
         if (self._context.get('is_profit')):
@@ -346,7 +344,6 @@ class AccountFinancialReportLine(models.Model):
                 'unfolded': line.id in options.get('unfolded_lines', []) or line.show_domain == 'always',
                 'page_break': line.print_on_new_page,
             }
-            # print("??????????????????//", vals)
             if financial_report.tax_report and line.domain and not line.action_id:
                 vals['caret_options'] = 'tax.report.line'
 
@@ -382,7 +379,6 @@ class AccountFinancialReportLine(models.Model):
                         'parent_id': line.id,
                         'columns': copy.deepcopy(lines[0]['columns']),
                     })
-            # print("????????????????????/", lines)
             for vals in lines:
                 if not is_profit and len(comparison_table) == 2 and not options.get('groups'):
                     if (is_profit):
@@ -396,12 +392,10 @@ class AccountFinancialReportLine(models.Model):
                 else:
                     vals['columns'] = [line._format(v) for v in vals['columns']]
                 if (is_profit):
-                    # print("????????????????/", res['line'])
                     if line.code in ['TOP', 'OIN', 'NEP', 'INC', 'GRP']:
                         rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total, True)
                     else:
                         rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total)
-                    print("????????????????????//////", vals)
                     if vals.get('columns') and len(vals.get('columns')) > 2:
                         vals['columns'][-2] = rec_vals
 
@@ -424,11 +418,7 @@ class AccountFinancialReportLine(models.Model):
         return final_result_table
 
     def _build_cmp_percentage(self, balance, comp, is_true=False):
-        # print("????????????????????//balance/", balance)
-        # print("????????????????????//balance/compcompcomp", comp)
-        # print("????????????linelineeeeeeeeeeeeeeeeeeeeeeee????????//balance/compcompcomp", comp)
         if comp != 0 and is_true:
-            # print("??????_build_cmp_percentage??????????", balance, comp)
             res = round(balance / comp * 100, 1)
             # In case the comparison is made on a negative figure, the color should be the other
             # way around. For example:
