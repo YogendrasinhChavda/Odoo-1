@@ -3,6 +3,13 @@
 """Inherited General Ledger Report python file."""
 import copy
 import ast
+import io
+try:
+    from odoo.tools.misc import xlsxwriter
+except ImportError:
+    # TODO saas-17: remove the try/except to directly import from misc
+    import xlsxwriter
+
 from odoo import models, fields, api, _
 from odoo.tools.misc import format_date, formatLang
 from datetime import datetime, timedelta
@@ -193,6 +200,117 @@ class AccountReport(models.AbstractModel):
         currency_id = self.env.user.company_id.currency_id
         return formatLang(self.env, value, currency_obj=currency_id)
 
+    def get_xlsx(self, options, response):
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        sheet = workbook.add_worksheet(self._get_report_name()[:31])
+
+        date_default_col1_style = workbook.add_format({'font_name': 'Arial', 'font_size': 12, 'font_color': '#666666', 'indent': 2, 'num_format': 'yyyy-mm-dd'})
+        date_default_style = workbook.add_format({'font_name': 'Arial', 'font_size': 12, 'font_color': '#666666', 'num_format': 'yyyy-mm-dd'})
+        default_col1_style = workbook.add_format({'font_name': 'Arial', 'font_size': 12, 'font_color': '#666666', 'indent': 2})
+        default_style = workbook.add_format({'font_name': 'Arial', 'font_size': 12, 'font_color': '#666666'})
+        title_style = workbook.add_format({'font_name': 'Arial', 'bold': True, 'bottom': 2})
+        super_col_style = workbook.add_format({'font_name': 'Arial', 'bold': True, 'align': 'center'})
+        level_0_style = workbook.add_format({'font_name': 'Arial', 'bold': True, 'font_size': 13, 'bottom': 6, 'font_color': '#666666'})
+        level_1_style = workbook.add_format({'font_name': 'Arial', 'bold': True, 'font_size': 13, 'bottom': 1, 'font_color': '#666666'})
+        level_2_col1_style = workbook.add_format({'font_name': 'Arial', 'bold': True, 'font_size': 12, 'font_color': '#666666', 'indent': 1})
+        level_2_col1_total_style = workbook.add_format({'font_name': 'Arial', 'bold': True, 'font_size': 12, 'font_color': '#666666'})
+        level_2_style = workbook.add_format({'font_name': 'Arial', 'bold': True, 'font_size': 12, 'font_color': '#666666'})
+        level_3_col1_style = workbook.add_format({'font_name': 'Arial', 'font_size': 12, 'font_color': '#666666', 'indent': 2})
+        level_3_col1_total_style = workbook.add_format({'font_name': 'Arial', 'bold': True, 'font_size': 12, 'font_color': '#666666', 'indent': 1})
+        level_3_style = workbook.add_format({'font_name': 'Arial', 'font_size': 12, 'font_color': '#666666'})
+
+        #Set the first column width to 50
+        sheet.set_column(0, 0, 50)
+
+        super_columns = self._get_super_columns(options)
+        y_offset = bool(super_columns.get('columns')) and 1 or 0
+
+        sheet.write(y_offset, 0, '', title_style)
+        is_profit = False;
+        profit_losse_action = self.env.ref('account_reports.account_financial_report_profitandloss0')
+        if profit_losse_action and profit_losse_action.id == self.id:
+            is_profit = True
+        # Todo in master: Try to put this logic elsewhere
+        x = super_columns.get('x_offset', 0)
+        for super_col in super_columns.get('columns', []):
+            cell_content = super_col.get('string', '').replace('<br/>', ' ').replace('&nbsp;', ' ')
+            x_merge = super_columns.get('merge')
+            if x_merge and x_merge > 1:
+                sheet.merge_range(0, x, 0, x + (x_merge - 1), cell_content, super_col_style)
+                x += x_merge
+            else:
+                sheet.write(0, x, cell_content, super_col_style)
+                x += 1
+        for row in self.with_context({'is_profit': is_profit}).get_header(options):
+            x = 0
+            for column in row:
+                colspan = column.get('colspan', 1)
+                header_label = column.get('name', '').replace('<br/>', ' ').replace('&nbsp;', ' ')
+                if colspan == 1:
+                    sheet.write(y_offset, x, header_label, title_style)
+                else:
+                    sheet.merge_range(y_offset, x, y_offset, x + colspan - 1, header_label, title_style)
+                x += colspan
+            y_offset += 1
+        ctx = self._set_context(options)
+        ctx.update({'no_format':True, 'print_mode':True, 'is_profit': is_profit})
+        lines = self.with_context(ctx)._get_lines(options)
+
+        if options.get('hierarchy'):
+            lines = self._create_hierarchy(lines)
+
+        #write all data rows
+        for y in range(0, len(lines)):
+            level = lines[y].get('level')
+            if lines[y].get('caret_options'):
+                style = level_3_style
+                col1_style = level_3_col1_style
+            elif level == 0:
+                y_offset += 1
+                style = level_0_style
+                col1_style = style
+            elif level == 1:
+                style = level_1_style
+                col1_style = style
+            elif level == 2:
+                style = level_2_style
+                col1_style = 'total' in lines[y].get('class', '').split(' ') and level_2_col1_total_style or level_2_col1_style
+            elif level == 3:
+                style = level_3_style
+                col1_style = 'total' in lines[y].get('class', '').split(' ') and level_3_col1_total_style or level_3_col1_style
+            else:
+                style = default_style
+                col1_style = default_col1_style
+
+            if 'date' in lines[y].get('class', ''):
+                #write the dates with a specific format to avoid them being casted as floats in the XLSX
+                if isinstance(lines[y]['name'], (datetime.date, datetime.datetime)):
+                    sheet.write_datetime(y + y_offset, 0, lines[y]['name'], date_default_col1_style)
+                else:
+                    sheet.write(y + y_offset, 0, lines[y]['name'], date_default_col1_style)
+            else:
+                #write the first column, with a specific style to manage the indentation
+                sheet.write(y + y_offset, 0, lines[y]['name'], col1_style)
+
+            #write all the remaining cells
+            for x in range(1, len(lines[y]['columns']) + 1):
+                this_cell_style = style
+                if 'date' in lines[y]['columns'][x - 1].get('class', ''):
+                    #write the dates with a specific format to avoid them being casted as floats in the XLSX
+                    this_cell_style = date_default_style
+                    if isinstance(lines[y]['columns'][x - 1].get('name', ''), (datetime.date, datetime.datetime)):
+                        sheet.write_datetime(y + y_offset, x + lines[y].get('colspan', 1) - 1, lines[y]['columns'][x - 1].get('name', ''), this_cell_style)
+                    else:
+                        sheet.write(y + y_offset, x + lines[y].get('colspan', 1) - 1, lines[y]['columns'][x - 1].get('name', ''), this_cell_style)
+                else:
+                    sheet.write(y + y_offset, x + lines[y].get('colspan', 1) - 1, lines[y]['columns'][x - 1].get('name', ''), this_cell_style)
+
+        workbook.close()
+        output.seek(0)
+        response.stream.write(output.read())
+        output.close()
+
 class ReportAccountFinancialReport(models.Model):
 
     _inherit = "account.financial.html.report"
@@ -205,10 +323,10 @@ class ReportAccountFinancialReport(models.Model):
         if options.get('comparison') and options['comparison'].get('periods'):
             for period in options['comparison']['periods']:
                 columns += [{'name': period.get('string'), 'class': 'number'}]
-            if not self._context.get('is_profit') and options['comparison'].get('number_period') == 1 and not options.get('groups'):
+            if options['comparison'].get('number_period') == 1 and not options.get('groups'):
                 columns += [{'name': '%', 'class': 'number'}]
         if self._context.get('is_profit'):
-            columns += [{'name': '%', 'class': 'number'}]
+            # columns += [{'name': '%', 'class': 'number'}]
             columns += [{'name': 'Total', 'class': 'number'}]
 
         if options.get('groups', {}).get('ids'):
@@ -221,7 +339,6 @@ class ReportAccountFinancialReport(models.Model):
                         group_column_name += ' ' + column_name
                     columns_for_groups.append({'name': column.get('name') + group_column_name, 'class': 'number'})
             columns = columns[:1] + columns_for_groups
-
         return columns
 
     @api.multi
@@ -266,8 +383,11 @@ class AccountFinancialReportLine(models.Model):
         # build comparison table
         is_profit = False
         opinic_total = 0
+        totla_per = 0
         if (self._context.get('is_profit')):
             is_profit = True
+            #     if (self._context.get('is_profit')):
+            # is_profit = True
         if (is_profit):
             if self._context and self._context.get('opinic_total'):
                 opinic_total = float(self._context.get('opinic_total'))
@@ -329,11 +449,46 @@ class AccountFinancialReportLine(models.Model):
                 continue
 
             total = 0
-            if (is_profit):
-                res['line'].append(0.0)
+            if is_profit and line.code not in ['INTP', 'OTP', 'NTP']:
                 for rec in res['line']:
                     total += rec
                 res['line'].append(total)
+            elif is_profit:
+                if line.code == 'INTP':
+                    per_id = self.search([('code', '=', 'GRP')])
+                if line.code == 'OTP':
+                    per_id = self.search([('code', '=', 'TOP')])
+                if line.code == 'NTP':
+                    per_id = self.search([('code', '=', 'NEP')])
+                if per_id:
+                    i = 0
+                    opnic_res = []
+                    domain_ids_line = {'line'}
+                    debit_credit = len(comparison_table) == 1
+                    for period in comparison_table:
+                            date_from = period.get('datee_from', False)
+                            date_to = period.get('date_to', False) or period.get('date', False)
+                            date_from, date_to, strict_range = per_id.with_context(date_from=date_from, date_to=date_to)._compute_date_range()
+
+                            r = per_id.with_context(
+                                date_from=date_from,
+                                date_to=date_to,
+                                strict_range=strict_range)._eval_formula(
+                                    financial_report,
+                                    debit_credit,
+                                    currency_table,
+                                    linesDicts[i],
+                                    groups=options.get('groups'))
+                            debit_credit = False
+                            opnic_res.extend(r)
+                            for column in r:
+                                domain_ids_line.update(column)
+                            i += 1
+                    opnic_res = per_id._put_columns_together(opnic_res, domain_ids_line)
+                    total = 0
+                    for rec in opnic_res['line']:
+                            total += rec
+                    res['line'].append(line._build_cmp_percentage(total, opinic_total))
             vals = {
                 'id': line.id,
                 'name': line.name,
@@ -380,24 +535,36 @@ class AccountFinancialReportLine(models.Model):
                         'columns': copy.deepcopy(lines[0]['columns']),
                     })
             for vals in lines:
-                if not is_profit and len(comparison_table) == 2 and not options.get('groups'):
-                    if (is_profit):
-                        vals['columns'].insert(-2, line._build_cmp(vals['columns'][0]['name'], vals['columns'][1]['name']))
-                    else:
+                if len(comparison_table) == 2 and not options.get('groups'):
+                    if is_profit and line.code not in ['INTP', 'OTP', 'NTP']:
+                        vals['columns'].insert(-1, line._build_cmp(vals['columns'][0]['name'], vals['columns'][1]['name']))
+                    elif line.code not in ['INTP', 'OTP', 'NTP']:
                         vals['columns'].append(line._build_cmp(vals['columns'][0]['name'], vals['columns'][1]['name']))
-                    for i in [0, 1]:
-                        vals['columns'][i] = line._format(vals['columns'][i])
-                    if (is_profit):
-                        vals['columns'][-1] = line._format(vals['columns'][-1])
+                    elif is_profit and line.code in ['INTP', 'OTP', 'NTP']:
+                        vals['columns'].insert(-1, line._build_cmp(0, 0))
+                    if line.code not in ['INTP', 'OTP', 'NTP']:
+                        for i in [0, 1]:
+                            vals['columns'][i] = line._format(vals['columns'][i])
+                        if is_profit:
+                            vals['columns'][-1] = line._format(vals['columns'][-1])
+                    # elif is_profit:
+                    elif is_profit and line.code in ['INTP', 'OTP', 'NTP']:
+                        for i in [0, 1]:
+                            vals['columns'][i] = line._build_percentage_total(vals['columns'][i].get('name'))
+                        if is_profit:
+                            vals['columns'][-1] = line._build_percentage_total(vals['columns'][-1].get('name'))
                 else:
-                    vals['columns'] = [line._format(v) for v in vals['columns']]
-                if (is_profit):
-                    if line.code in ['TOP', 'OIN', 'NEP', 'INC', 'GRP']:
-                        rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total, True)
+                    if is_profit and line.code in ['INTP', 'OTP', 'NTP']:
+                        vals['columns'] = [line._build_percentage_total(v.get('name')) for v in vals['columns']]
                     else:
-                        rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total)
-                    if vals.get('columns') and len(vals.get('columns')) > 2:
-                        vals['columns'][-2] = rec_vals
+                        vals['columns'] = [line._format(v) for v in vals['columns']]
+                # if (is_profit):
+                #     if line.code in ['TOP', 'OIN', 'NEP', 'INC', 'GRP']:
+                #         rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total, True)
+                #     else:
+                #         rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total)
+                #     if vals.get('columns') and len(vals.get('columns')) > 2:
+                #         vals['columns'][-2] = rec_vals
 
                 if not line.formulas:
                     vals['columns'] = [{'name': ''} for k in vals['columns']]
@@ -418,8 +585,9 @@ class AccountFinancialReportLine(models.Model):
         return final_result_table
 
     def _build_cmp_percentage(self, balance, comp, is_true=False):
-        if comp != 0 and is_true:
+        if comp != 0:
             res = round(balance / comp * 100, 1)
+            return res
             # In case the comparison is made on a negative figure, the color should be the other
             # way around. For example:
             #                       2018         2017           %
@@ -427,9 +595,26 @@ class AccountFinancialReportLine(models.Model):
             #
             # The percentage is negative, which is mathematically correct, but my sales increased
             # => it should be green, not red!
-            if (res > 0) != (self.green_on_positive and comp > 0):
-                return {'name': str(res) + '%', 'class': 'number color-red'}
+        #     if (res > 0) != (self.green_on_positive and comp > 0):
+        #         return {'name': str(res) + '%', 'class': 'number color-red'}
+        #     else:
+        #         return {'name': str(res) + '%', 'class': 'number color-green'}
+        # else:
+        #     return {'name': _('n/a')}
+
+    def _build_percentage_total(self, balance):
+        if balance and balance != 0:
+            # In case the comparison is made on a negative figure, the color should be the other
+            # way around. For example:
+            #                       2018         2017           %
+            # Product Sales      1000.00     -1000.00     -200.0%
+            #
+            # The percentage is negative, which is mathematically correct, but my sales increased
+            # => it should be green, not red!
+            balance = round(balance, 1)
+            if (balance > 0) != (self.green_on_positive):
+                return {'name': str(balance) + '%', 'class': 'number color-red'}
             else:
-                return {'name': str(res) + '%', 'class': 'number color-green'}
+                return {'name': str(balance) + '%', 'class': 'number color-green'}
         else:
-            return {'name': _('n/a')}
+            return {'name': _('n/a')}        
