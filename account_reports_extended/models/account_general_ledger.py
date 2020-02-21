@@ -205,10 +205,10 @@ class ReportAccountFinancialReport(models.Model):
         if options.get('comparison') and options['comparison'].get('periods'):
             for period in options['comparison']['periods']:
                 columns += [{'name': period.get('string'), 'class': 'number'}]
-            if not self._context.get('is_profit') and options['comparison'].get('number_period') == 1 and not options.get('groups'):
+            if options['comparison'].get('number_period') == 1 and not options.get('groups'):
                 columns += [{'name': '%', 'class': 'number'}]
         if self._context.get('is_profit'):
-            columns += [{'name': '%', 'class': 'number'}]
+            # columns += [{'name': '%', 'class': 'number'}]
             columns += [{'name': 'Total', 'class': 'number'}]
 
         if options.get('groups', {}).get('ids'):
@@ -266,8 +266,11 @@ class AccountFinancialReportLine(models.Model):
         # build comparison table
         is_profit = False
         opinic_total = 0
+        totla_per = 0
         if (self._context.get('is_profit')):
             is_profit = True
+            #     if (self._context.get('is_profit')):
+            # is_profit = True
         if (is_profit):
             if self._context and self._context.get('opinic_total'):
                 opinic_total = float(self._context.get('opinic_total'))
@@ -329,11 +332,46 @@ class AccountFinancialReportLine(models.Model):
                 continue
 
             total = 0
-            if (is_profit):
-                res['line'].append(0.0)
+            if is_profit and line.code not in ['INTP', 'OTP', 'NTP']:
                 for rec in res['line']:
                     total += rec
                 res['line'].append(total)
+            elif is_profit:
+                if line.code == 'INTP':
+                    per_id = self.search([('code', '=', 'GRP')])
+                if line.code == 'OTP':
+                    per_id = self.search([('code', '=', 'TOP')])
+                if line.code == 'NTP':
+                    per_id = self.search([('code', '=', 'NEP')])
+                if per_id:
+                    i = 0
+                    opnic_res = []
+                    domain_ids_line = {'line'}
+                    debit_credit = len(comparison_table) == 1
+                    for period in comparison_table:
+                            date_from = period.get('datee_from', False)
+                            date_to = period.get('date_to', False) or period.get('date', False)
+                            date_from, date_to, strict_range = per_id.with_context(date_from=date_from, date_to=date_to)._compute_date_range()
+
+                            r = per_id.with_context(
+                                date_from=date_from,
+                                date_to=date_to,
+                                strict_range=strict_range)._eval_formula(
+                                    financial_report,
+                                    debit_credit,
+                                    currency_table,
+                                    linesDicts[i],
+                                    groups=options.get('groups'))
+                            debit_credit = False
+                            opnic_res.extend(r)
+                            for column in r:
+                                domain_ids_line.update(column)
+                            i += 1
+                    opnic_res = per_id._put_columns_together(opnic_res, domain_ids_line)
+                    total = 0
+                    for rec in opnic_res['line']:
+                            total += rec
+                    res['line'].append(line._build_cmp_percentage(total, opinic_total))
             vals = {
                 'id': line.id,
                 'name': line.name,
@@ -380,24 +418,36 @@ class AccountFinancialReportLine(models.Model):
                         'columns': copy.deepcopy(lines[0]['columns']),
                     })
             for vals in lines:
-                if not is_profit and len(comparison_table) == 2 and not options.get('groups'):
-                    if (is_profit):
-                        vals['columns'].insert(-2, line._build_cmp(vals['columns'][0]['name'], vals['columns'][1]['name']))
-                    else:
+                if len(comparison_table) == 2 and not options.get('groups'):
+                    if is_profit and line.code not in ['INTP', 'OTP', 'NTP']:
+                        vals['columns'].insert(-1, line._build_cmp(vals['columns'][0]['name'], vals['columns'][1]['name']))
+                    elif line.code not in ['INTP', 'OTP', 'NTP']:
                         vals['columns'].append(line._build_cmp(vals['columns'][0]['name'], vals['columns'][1]['name']))
-                    for i in [0, 1]:
-                        vals['columns'][i] = line._format(vals['columns'][i])
-                    if (is_profit):
-                        vals['columns'][-1] = line._format(vals['columns'][-1])
+                    elif is_profit and line.code in ['INTP', 'OTP', 'NTP']:
+                        vals['columns'].insert(-1, line._build_cmp(0, 0))
+                    if line.code not in ['INTP', 'OTP', 'NTP']:
+                        for i in [0, 1]:
+                            vals['columns'][i] = line._format(vals['columns'][i])
+                        if is_profit:
+                            vals['columns'][-1] = line._format(vals['columns'][-1])
+                    # elif is_profit:
+                    elif is_profit and line.code in ['INTP', 'OTP', 'NTP']:
+                        for i in [0, 1]:
+                            vals['columns'][i] = line._build_percentage_total(vals['columns'][i].get('name'))
+                        if is_profit:
+                            vals['columns'][-1] = line._build_percentage_total(vals['columns'][-1].get('name'))
                 else:
-                    vals['columns'] = [line._format(v) for v in vals['columns']]
-                if (is_profit):
-                    if line.code in ['TOP', 'OIN', 'NEP', 'INC', 'GRP']:
-                        rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total, True)
+                    if is_profit and line.code in ['INTP', 'OTP', 'NTP']:
+                        vals['columns'] = [line._build_percentage_total(v.get('name')) for v in vals['columns']]
                     else:
-                        rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total)
-                    if vals.get('columns') and len(vals.get('columns')) > 2:
-                        vals['columns'][-2] = rec_vals
+                        vals['columns'] = [line._format(v) for v in vals['columns']]
+                # if (is_profit):
+                #     if line.code in ['TOP', 'OIN', 'NEP', 'INC', 'GRP']:
+                #         rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total, True)
+                #     else:
+                #         rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total)
+                #     if vals.get('columns') and len(vals.get('columns')) > 2:
+                #         vals['columns'][-2] = rec_vals
 
                 if not line.formulas:
                     vals['columns'] = [{'name': ''} for k in vals['columns']]
@@ -418,8 +468,9 @@ class AccountFinancialReportLine(models.Model):
         return final_result_table
 
     def _build_cmp_percentage(self, balance, comp, is_true=False):
-        if comp != 0 and is_true:
+        if comp != 0:
             res = round(balance / comp * 100, 1)
+            return res
             # In case the comparison is made on a negative figure, the color should be the other
             # way around. For example:
             #                       2018         2017           %
@@ -427,9 +478,26 @@ class AccountFinancialReportLine(models.Model):
             #
             # The percentage is negative, which is mathematically correct, but my sales increased
             # => it should be green, not red!
-            if (res > 0) != (self.green_on_positive and comp > 0):
-                return {'name': str(res) + '%', 'class': 'number color-red'}
+        #     if (res > 0) != (self.green_on_positive and comp > 0):
+        #         return {'name': str(res) + '%', 'class': 'number color-red'}
+        #     else:
+        #         return {'name': str(res) + '%', 'class': 'number color-green'}
+        # else:
+        #     return {'name': _('n/a')}
+
+    def _build_percentage_total(self, balance):
+        if balance and balance != 0:
+            # In case the comparison is made on a negative figure, the color should be the other
+            # way around. For example:
+            #                       2018         2017           %
+            # Product Sales      1000.00     -1000.00     -200.0%
+            #
+            # The percentage is negative, which is mathematically correct, but my sales increased
+            # => it should be green, not red!
+            balance = round(balance, 1)
+            if (balance > 0) != (self.green_on_positive):
+                return {'name': str(balance) + '%', 'class': 'number color-red'}
             else:
-                return {'name': str(res) + '%', 'class': 'number color-green'}
+                return {'name': str(balance) + '%', 'class': 'number color-green'}
         else:
-            return {'name': _('n/a')}
+            return {'name': _('n/a')}        
