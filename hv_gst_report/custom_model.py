@@ -80,17 +80,22 @@ class GstReport(models.TransientModel):
         super_col_style = workbook.add_format(
             {'font_name': 'Arial', 'bold': True, 'align': 'center'})
         level_0_style = workbook.add_format(
-            {'font_name': 'Arial', 'bold': True, 'bottom': 2, 'top': 2, 'pattern': 1, 'font_color': '#FFFFFF'})
+            {'font_name': 'Arial', 'bold': True, 'bottom': 2, 'top': 2,
+             'pattern': 1, 'font_color': '#FFFFFF'})
         level_0_style_left = workbook.add_format(
-            {'font_name': 'Arial', 'bold': True, 'bottom': 2, 'top': 2, 'left': 2, 'pattern': 1, 'font_color': '#FFFFFF'})
+            {'font_name': 'Arial', 'bold': True, 'bottom': 2, 'top': 2,
+             'left': 2, 'pattern': 1, 'font_color': '#FFFFFF'})
         level_0_style_right = workbook.add_format(
-            {'font_name': 'Arial', 'bold': True, 'bottom': 2, 'top': 2, 'right': 2, 'pattern': 1, 'font_color': '#FFFFFF'})
+            {'font_name': 'Arial', 'bold': True, 'bottom': 2, 'top': 2,
+             'right': 2, 'pattern': 1, 'font_color': '#FFFFFF'})
         level_1_style = workbook.add_format(
             {'font_name': 'Arial', 'bold': True, 'bottom': 2, 'top': 2})
         level_1_style_left = workbook.add_format(
-            {'font_name': 'Arial', 'bold': True, 'bottom': 2, 'top': 2, 'left': 2})
+            {'font_name': 'Arial', 'bold': True, 'bottom': 2,
+             'top': 2, 'left': 2})
         level_1_style_right = workbook.add_format(
-            {'font_name': 'Arial', 'bold': True, 'bottom': 2, 'top': 2, 'right': 2})
+            {'font_name': 'Arial', 'bold': True, 'bottom': 2,
+             'top': 2, 'right': 2})
         level_2_style = workbook.add_format(
             {'font_name': 'Arial', 'bold': True, 'top': 2})
         level_2_style_left = workbook.add_format(
@@ -124,13 +129,18 @@ class GstReport(models.TransientModel):
         convert_date = self.env['ir.qweb.field.date'].value_to_html
 
         f16_style = workbook.add_format(
-            {'font_name': 'Arial', 'bold': True, 'font_size': 18, 'align': 'center'})
+            {'font_name': 'Arial', 'bold': True,
+             'font_size': 18, 'align': 'center'})
         f14_style = workbook.add_format(
-            {'font_name': 'Arial', 'bold': True, 'font_size': 16, 'align': 'center'})
+            {'font_name': 'Arial', 'bold': True,
+             'font_size': 16, 'align': 'center'})
         sheet.write(0, 2, self.env.user.company_id.name, f14_style)
         sheet.write(1, 2, options.get('reportname'), f16_style)
-        sheet.write(2, 2, convert_date('%s' % (options.get('date').get('date_from')), {
-                    'format': 'dd MMM YYYY'}) + ' - ' + convert_date('%s' % (options.get('date').get('date_to')), {'format': 'dd MMM YYYY'}), f14_style)
+        sheet.write(
+            2, 2, convert_date('%s' % (options.get('date').get('date_from')),
+                               {'format': 'dd MMM YYYY'}) + ' - ' +
+            convert_date('%s' % (options.get('date').get('date_to')),
+                         {'format': 'dd MMM YYYY'}), f14_style)
         y_offset = 4
 
         sheet.write(y_offset, 0, '', title_style)
@@ -158,7 +168,8 @@ class GstReport(models.TransientModel):
                     sheet.write(y_offset, x, header_label, title_style)
                 else:
                     sheet.merge_range(y_offset, x, y_offset,
-                                      x + colspan - 1, header_label, title_style)
+                                      x + colspan - 1, header_label,
+                                      title_style)
                 x += colspan
             y_offset += 1
         ctx = self._set_context(options)
@@ -231,6 +242,8 @@ class GstReport(models.TransientModel):
 
     @api.model
     def _get_lines(self, options, line_id=None):
+        company = self.env.user and self.env.user.company_id and \
+            self.env.user.company_id.id or 0
         offset = int(options.get('lines_offset', 0))
         convert_date = self.env['ir.qweb.field.date'].value_to_html
         lines = []
@@ -241,39 +254,79 @@ class GstReport(models.TransientModel):
                 tax_cond = 'b.id in (%s)' % (tax_cond)
             else:
                 tax_cond = 'b.id = -1'
-            select = """select * from (select coalesce(b.id,0) id, coalesce(b.name,'Unoriginal Tax') as name, 
-sum(a.net) as net, sum(a.tax) tax 
-from (select tax_line_id as taxid, 0 as net, balance as tax, * from account_move_line a where account_id in 
-	(select account_id from account_tax where type_tax_use = '%s' and account_id is not null group by account_id)
-	union all
-	select c.id as taxid, balance as net, 0 as tax, a.* from account_move_line a,account_move_line_account_tax_rel b, account_tax c
-	where a.id=b.account_move_line_id and b.account_tax_id=c.id and c.type_tax_use = '%s'
-    union all
-	select 0 as taxid, balance  as net, 0 as tax, a.* from account_move_line a
-	where a.account_id in (select id from account_account as aa where aa.code='4060')
-    	and a.id not in (select account_move_line_id from account_move_line_account_tax_rel)) a
-	left join account_tax b on a.taxid = b.id
-	left join account_payment f on a.payment_id = f.id
-where a.date>='%s' and a.date<='%s'
-group by coalesce(b.id,0), coalesce(b.name,'Unoriginal Tax') order by name) b where %s
-                """  % (options.get('reporttype'), options.get('reporttype'), options.get('date').get('date_from'), options.get('date').get('date_to'), tax_cond)
+            select = """select * from (select coalesce(b.id,0) id,
+                    coalesce(b.name,'Unoriginal Tax') as name,
+                    sum(a.net) as net, sum(a.tax) tax
+                from (select tax_line_id as taxid, 0 as net,
+                        balance as tax, * from account_move_line a
+                    where
+                        account_id in (select account_id from account_tax
+                            where type_tax_use = '%s' and company_id = '%s'
+                            and account_id is not null
+                            group by account_id)
+                        and company_id = '%s'
+                    union all
+                    select c.id as taxid, balance as net, 0 as tax,
+                        a.* from account_move_line a,
+                            account_move_line_account_tax_rel b,
+                            account_tax c
+                    where a.id=b.account_move_line_id and
+                        b.account_tax_id=c.id and c.type_tax_use = '%s'
+                    union all
+                    select 0 as taxid, balance  as net, 0 as tax,
+                        a.* from account_move_line a
+                    where a.account_id in
+                        (select id from account_account as aa where
+                            aa.code='4060')
+                        and a.id not in (select account_move_line_id from
+                            account_move_line_account_tax_rel)) a
+                    left join account_tax b on a.taxid = b.id
+                    left join account_payment f on a.payment_id = f.id
+                where a.date>='%s' and a.date<='%s' and a.company_id = '%s'
+                group by coalesce(b.id,0),
+                coalesce(b.name,'Unoriginal Tax') order by name) b where %s
+                """ % (options.get('reporttype'), company, company,
+                       options.get('reporttype'),
+                       options.get('date').get('date_from'),
+                       options.get('date').get('date_to'), company, tax_cond)
         else:
-            select = """select * from (select coalesce(b.id,0) id, coalesce(b.name,'Unoriginal Tax') as name, 
-sum(a.net) as net, sum(a.tax) tax 
-from (select tax_line_id as taxid, 0 as net, balance as tax, * from account_move_line a where account_id in 
-	(select account_id from account_tax where type_tax_use = '%s' and account_id is not null group by account_id)
-	union all
-	select c.id as taxid, balance as net, 0 as tax, a.* from account_move_line a,account_move_line_account_tax_rel b, account_tax c
-	where a.id=b.account_move_line_id and b.account_tax_id=c.id and c.type_tax_use = '%s'
-    union all
-	select 0 as taxid, balance  as net, 0 as tax, a.* from account_move_line a
-	where a.account_id in (select id from account_account as aa where aa.code='4060')
-    	and a.id not in (select account_move_line_id from account_move_line_account_tax_rel))  a
-	left join account_tax b on a.taxid = b.id
-	left join account_payment f on a.payment_id = f.id
-where a.date>='%s' and a.date<='%s'
-group by coalesce(b.id,0), coalesce(b.name,'Unoriginal Tax') order by name) b where b.id = %s
-                """  % (options.get('reporttype'), options.get('reporttype'), options.get('date').get('date_from'), options.get('date').get('date_to'), line_id.split('_')[1])
+            select = """select * from (select coalesce(b.id,0) id,
+                    coalesce(b.name,'Unoriginal Tax') as name,
+                    sum(a.net) as net, sum(a.tax) tax
+                from (select tax_line_id as taxid, 0 as net, balance as tax,
+                    * from account_move_line a
+                    where account_id in
+                        (select account_id from account_tax where
+                        type_tax_use = '%s' and company_id = '%s' and
+                        account_id is not null
+                        group by account_id)
+                    and company_id = '%s'
+                    union all
+                    select c.id as taxid, balance as net, 0 as tax,
+                        a.* from account_move_line a,
+                        account_move_line_account_tax_rel b, account_tax c
+                    where a.id=b.account_move_line_id and
+                    b.account_tax_id=c.id and c.type_tax_use = '%s'
+                    union all
+                    select 0 as taxid, balance  as net, 0 as tax,
+                    a.* from account_move_line a
+                    where a.account_id in (select id from
+                        account_account as aa where aa.code='4060')
+                        and a.id not in (select account_move_line_id from
+                        account_move_line_account_tax_rel))  a
+                    left join account_tax b on a.taxid = b.id
+                    left join account_payment f on a.payment_id = f.id
+                where a.date>='%s' and a.date<='%s' and a.company_id = '%s'
+                group by coalesce(b.id,0),
+                coalesce(b.name,'Unoriginal Tax') order by name)
+                    b where b.id = %s""" % (options.get('reporttype'),
+                                            company, company,
+                                            options.get('reporttype'),
+                                            options.get('date').get(
+                                                'date_from'),
+                                            options.get('date').get('date_to'),
+                                            company,
+                                            line_id.split('_')[1])
 
         self.env.cr.execute(select, [])
         results = self.env.cr.dictfetchall()
@@ -298,33 +351,54 @@ group by coalesce(b.id,0), coalesce(b.name,'Unoriginal Tax') order by name) b wh
                 })
 
             if 'tax_%s' % (current_id) in options.get('unfolded_lines') or options.get('unfold_all'):
-                select = """select * from (select a.id, a.name, c.name as transtype, a.date, a.tax,
-coalesce(a.net, 0) as net,
-case when b.id is null and f.id is not null then f.name
-	when trim(a.ref)='' or a.ref is null then d.name else a.ref end as ref,
-coalesce(b.id,0) tax_line_id, a.journal_id, a.invoice_id, a.move_id, a.payment_id, d.name as jentry
-from (select tax_line_id as taxid, 0 as net, balance as tax, * from account_move_line a where account_id in 
-	(select account_id from account_tax where type_tax_use = '%s' and account_id is not null group by account_id)
-	union all
-	select c.id as taxid, balance as net, 0 as tax, a.* from account_move_line a,account_move_line_account_tax_rel b, account_tax c
-	where a.id=b.account_move_line_id and b.account_tax_id=c.id and c.type_tax_use = '%s'
-    union all
-	select 0 as taxid, balance  as net, 0 as tax, a.* from account_move_line a
-	where a.account_id in (select id from account_account as aa where aa.code='4060')
-    	and a.id not in (select account_move_line_id from account_move_line_account_tax_rel)) a
-	left join account_tax b on a.taxid = b.id
-	left join account_payment f on a.payment_id = f.id
-	left join account_journal c on a.journal_id=c.id
-	left join account_move d on a.move_id=d.id
-where a.date>='%s' and a.date<='%s') b where b.tax_line_id = %s order by b.date, b.jentry, abs(b.net) desc
-                """  % (options.get('reporttype'), options.get('reporttype'), options.get('date').get('date_from'), options.get('date').get('date_to'), current_id)
+                select = """select * from (select a.id, a.name,
+                    c.name as transtype, a.date, a.tax,
+                    coalesce(a.net, 0) as net,
+                    case when b.id is null and f.id is not null then f.name
+                        when trim(a.ref)='' or a.ref is null then
+                        d.name else a.ref end as ref,
+                    coalesce(b.id,0) tax_line_id, a.journal_id, a.invoice_id,
+                    a.move_id, a.payment_id, d.name as jentry
+                    from (select tax_line_id as taxid, 0 as net,
+                        balance as tax, * from account_move_line a
+                        where account_id in (select account_id from
+                            account_tax where type_tax_use = '%s' and
+                            company_id = '%s' and account_id is not null
+                            group by account_id)
+                        and company_id = '%s'
+                        union all
+                        select c.id as taxid, balance as net, 0 as tax,
+                            a.* from account_move_line a,
+                            account_move_line_account_tax_rel b,
+                            account_tax c
+                        where a.id=b.account_move_line_id and
+                            b.account_tax_id=c.id and c.type_tax_use = '%s'
+                        union all
+                            select 0 as taxid, balance  as net,
+                            0 as tax, a.* from account_move_line a
+                        where a.account_id in (select id from
+                            account_account as aa where aa.code='4060')
+                            and a.id not in (select account_move_line_id from
+                                account_move_line_account_tax_rel)) a
+                        left join account_tax b on a.taxid = b.id
+                        left join account_payment f on a.payment_id = f.id
+                        left join account_journal c on a.journal_id=c.id
+                        left join account_move d on a.move_id=d.id
+                    where a.date>='%s' and a.date<='%s') b where
+                    b.tax_line_id = %s order by b.date,
+                    b.jentry, abs(b.net) desc""" % (
+                    options.get('reporttype'), company, company,
+                    options.get('reporttype'),
+                    options.get('date').get('date_from'),
+                    options.get('date').get('date_to'), current_id)
 
                 self.env.cr.execute(select, [])
                 results1 = self.env.cr.dictfetchall()
 
                 domain_lines = []
                 remaining_lines = 0
-                if not self.env.context.get('print_mode') or options.get('export_excel') == False:
+                if not self.env.context.get('print_mode') or \
+                        options.get('export_excel') == False:
                     remaining_lines = len(results1) - offset - self.MAX_LINES
                 row = 0
                 for values1 in results1:
