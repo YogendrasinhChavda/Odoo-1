@@ -11,9 +11,46 @@
             <field name="parent_id" eval="False"/>
             <field name="financial_report_id"
                 ref="account_reports.account_financial_report_profitandloss0"/>
-            <field name="sequence" eval="3"/>
+            <field name="sequence" eval="4"/>
             <field name="level" eval="0" />
         </record>
+
+        <record id="account_financial_report_incomepercentage0"
+            model="account.financial.html.report.line">
+            <field name="name"> Income Percentage</field>
+            <field name="code">INTP</field>
+            <field name="formulas">balance = (GRP.balance / OPINC.balance ) * 100</field>
+            <field name="parent_id" eval="False"/>
+            <field name="financial_report_id"
+                ref="account_reports.account_financial_report_profitandloss0"/>
+            <field name="sequence" eval="2"/>
+            <field name="level" eval="0" />
+        </record>
+
+        <record id="account_financial_report_operationalpercentage0"
+            model="account.financial.html.report.line">
+            <field name="name">Operational Percentage</field>
+            <field name="code">OTP</field>
+            <field name="formulas">balance = (TOP.balance / OPINC.balance ) * 100</field>
+            <field name="parent_id" eval="False"/>
+            <field name="financial_report_id"
+                ref="account_reports.account_financial_report_profitandloss0"/>
+            <field name="sequence" eval="4"/>
+            <field name="level" eval="0" />
+        </record>
+
+         <record id="account_financial_report_netpercentage0"
+            model="account.financial.html.report.line">
+            <field name="name">Net Percentage</field>
+            <field name="code">NTP</field>
+            <field name="formulas">balance = (NEP.balance / OPINC.balance ) * 100</field>
+            <field name="parent_id" eval="False"/>
+            <field name="financial_report_id"
+                ref="account_reports.account_financial_report_profitandloss0"/>
+            <field name="sequence" eval="6"/>
+            <field name="level" eval="0" />
+        </record>
+
 
         <!-- Other Income Section for Profit and Loss Report  -->
         <record id="account_reports.account_financial_report_other_income0"
@@ -21,7 +58,7 @@
             <field name="parent_id" eval="False"/>
             <field name="financial_report_id"
                 ref="account_reports.account_financial_report_profitandloss0"/>
-            <field name="sequence" eval="4"/>
+            <field name="sequence" eval="5"/>
             <field name="level" eval="0"/>
         </record>
 
@@ -30,6 +67,10 @@
             model="account.financial.html.report.line">
             <field name="sequence" eval="5"/>
             <field name="formulas">balance = OIN.balance + TOP.balance</field>
+        </record>
+
+        <record id="account_reports.account_financial_report_less_expenses0" model="account.financial.html.report.line">
+            <field name="sequence" eval="3"/>
         </record>
     </data>
 </odoo>
