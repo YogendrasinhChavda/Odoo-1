@@ -149,7 +149,10 @@ class AccountReport(models.AbstractModel):
         profit_losse_action = self.env.ref('account_reports.account_financial_report_profitandloss0')
         if profit_losse_action and profit_losse_action.id == self.id:
             is_profit = True
-        lines = self.with_context({'is_profit': is_profit})._get_lines(options, line_id=line_id)
+                # with_context({'is_profit': is_profit})
+            lines = self.with_context({'is_profit': is_profit})._get_lines(options, line_id=line_id)
+        else:
+            lines = self._get_lines(options, line_id=line_id)
         if options.get('hierarchy'):
             lines = self._create_hierarchy(lines)
         footnotes_to_render = []
