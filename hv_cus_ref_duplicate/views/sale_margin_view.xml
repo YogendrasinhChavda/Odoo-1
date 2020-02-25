@@ -1,18 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- <record id="add_button_cus_ref_sale_order" model="ir.ui.view">
-        <field name="name">add.button.cus.ref.sale.order</field>
+    <record id="view_order_form_foc_inherit" model="ir.ui.view">
+        <field name="name">sale.order.form.foc.inherit</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='client_order_ref']" position="after">
+            <xpath expr="//field[@name='partner_shipping_id']" position="after">
+                <field name="x_studio_branch"/>
+            </xpath>
+            <xpath expr="//field[@name='pricelist_id']" position="after">
+                <field name="foc_required" invisible="1"/>
+                <field name="x_studio_foc" attrs="{'required': [('foc_required', '=', True)]}"/>
+            </xpath>
+<!--             <xpath expr="//field[@name='client_order_ref']" position="after">
                 <field name="client_order_ref_dup" invisible="1"/>
                 <field name="id" invisible="1"/>
                 <field name="wanttosave" attrs="{'invisible': ['|',('client_order_ref_dup', '=', 0)]}" />
                 <button name="show_duplicate" icon="fa-arrow-right" type="object" string="Click to view duplicated SO." class="btn-link" attrs="{'invisible': [('client_order_ref_dup', '=', 0)]}"/>
-            </xpath>
+            </xpath> -->
         </field>
-    </record> -->
+    </record>
 
     <!-- Inherited Quotation Tree View to Add the Margin -->
     <record model="ir.ui.view" id="view_quotation_tree_margin_inherit">
