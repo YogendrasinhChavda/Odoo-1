@@ -74,9 +74,8 @@ class SaleOrder(models.Model):
     def onchange_partner_id(self):
         """Onchange method to set the branch number."""
         super(SaleOrder, self).onchange_partner_id()
-        if self.partner_id:
-            self.x_studio_branch = \
-                self.partner_id and self.partner_id.x_studio_branch
+        self.x_studio_branch = \
+            self.partner_id and self.partner_id.x_studio_branch or ''
 
     @api.onchange('x_studio_branch')
     def onchange_x_studio_branch(self):
@@ -85,20 +84,23 @@ class SaleOrder(models.Model):
         dom = []
         if self.x_studio_branch:
             dom.append(('x_studio_branch', '=', self.x_studio_branch))
-        if self.company_id:
-            dom.append(('company_id', '=',
-                        self.company_id and self.company_id.id or False))
-        partner = res_obj.search(dom, limit=1)
-        if partner:
-            address = partner.address_get(['delivery', 'invoice'])
-            self.partner_id = address and \
-                address.get('contact', False) or partner.id or False
-            self.partner_invoice_id = address and \
-                address.get('invoice', False) or \
-                partner.id or False
-            self.partner_shipping_id = address and \
-                address.get('delivery', False) or \
-                partner.id or False
+            if self.company_id:
+                dom.append(('company_id', '=',
+                            self.company_id and self.company_id.id or False))
+        if dom:
+            partner = res_obj.search(dom, limit=1)
+            if not partner:
+                self.partner_id = False
+            if partner:
+                address = partner.address_get(['delivery', 'invoice'])
+                self.partner_id = address and \
+                    address.get('contact', False) or partner.id or False
+                self.partner_invoice_id = address and \
+                    address.get('invoice', False) or \
+                    partner.id or False
+                self.partner_shipping_id = address and \
+                    address.get('delivery', False) or \
+                    partner.id or False
 
     @api.multi
     @api.depends('order_line', 'order_line.product_uom_qty',
