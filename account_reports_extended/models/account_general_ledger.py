@@ -149,8 +149,8 @@ class AccountReport(models.AbstractModel):
         profit_losse_action = self.env.ref('account_reports.account_financial_report_profitandloss0')
         if profit_losse_action and profit_losse_action.id == self.id:
             is_profit = True
-                # with_context({'is_profit': is_profit})
-            lines = self.with_context({'is_profit': is_profit})._get_lines(options, line_id=line_id)
+            options['is_profit'] = is_profit
+            lines = self._get_lines(options, line_id=line_id)
         else:
             lines = self._get_lines(options, line_id=line_id)
         if options.get('hierarchy'):
@@ -197,11 +197,6 @@ class AccountReport(models.AbstractModel):
             # append footnote as well
             html = html.replace(b'<div class="js_account_report_footnotes"></div>', self.get_html_footnotes(footnotes_to_render))
         return html
-
-    @api.model
-    def get_currency(self, value):
-        currency_id = self.env.user.company_id.currency_id
-        return formatLang(self.env, value, currency_obj=currency_id)
 
     def get_xlsx(self, options, response):
         output = io.BytesIO()
@@ -256,6 +251,7 @@ class AccountReport(models.AbstractModel):
                     sheet.merge_range(y_offset, x, y_offset, x + colspan - 1, header_label, title_style)
                 x += colspan
             y_offset += 1
+        options['is_profit'] = is_profit
         ctx = self._set_context(options)
         ctx.update({'no_format':True, 'print_mode':True, 'is_profit': is_profit})
         lines = self.with_context(ctx)._get_lines(options)
@@ -344,34 +340,6 @@ class ReportAccountFinancialReport(models.Model):
             columns = columns[:1] + columns_for_groups
         return columns
 
-    @api.multi
-    def _get_lines(self, options, line_id=None):
-        line_obj = self.line_ids
-        if line_id:
-            line_obj = self.env['account.financial.html.report.line'].search([('id', '=', line_id)])
-        if options.get('comparison') and options.get('comparison').get('periods'):
-            line_obj = line_obj.with_context(periods=options['comparison']['periods'])
-        if options.get('ir_filters'):
-            line_obj = line_obj.with_context(periods=options.get('ir_filters'))
-
-        currency_table = self._get_currency_table()
-        domain, group_by = self._get_filter_info(options)
-
-        if group_by:
-            options['groups'] = {}
-            options['groups']['fields'] = group_by
-            options['groups']['ids'] = self._get_groups(domain, group_by)
-
-        amount_of_periods = len((options.get('comparison') or {}).get('periods') or []) + 1
-        amount_of_group_ids = len(options.get('groups', {}).get('ids') or []) or 1
-        linesDicts = [[{} for _ in range(0, amount_of_group_ids)] for _ in range(0, amount_of_periods)]
-
-        res = line_obj.with_context(
-            cash_basis=options.get('cash_basis'),
-            filter_domain=domain,
-        )._get_lines(self, currency_table, options, linesDicts)
-        return res
-
 class AccountFinancialReportLine(models.Model):
 
     _inherit = "account.financial.html.report.line"
@@ -386,21 +354,18 @@ class AccountFinancialReportLine(models.Model):
         # build comparison table
         is_profit = False
         opinic_total = 0
-        totla_per = 0
-        if (self._context.get('is_profit')):
+        if self._context.get('is_profit') or options.get('is_profit'):
             is_profit = True
-            #     if (self._context.get('is_profit')):
-            # is_profit = True
         if (is_profit):
             if self._context and self._context.get('opinic_total'):
                 opinic_total = float(self._context.get('opinic_total'))
             j = 0
             opnic_id = self.search([('code', '=', 'OPINC')])
-            res = []
-            domain_ids = {'line'}
+            op_res = []
+            op_domain_ids = {'line'}
             debit_credit = len(comparison_table) == 1
             for period in comparison_table:
-                    date_from = period.get('datee_from', False)
+                    date_from = period.get('date_from', False)
                     date_to = period.get('date_to', False) or period.get('date', False)
                     date_from, date_to, strict_range = opnic_id.with_context(date_from=date_from, date_to=date_to)._compute_date_range()
 
@@ -414,25 +379,24 @@ class AccountFinancialReportLine(models.Model):
                             linesDicts[j],
                             groups=options.get('groups'))
                     debit_credit = False
-                    res.extend(r)
+                    op_res.extend(r)
                     for column in r:
-                        domain_ids.update(column)
+                        op_domain_ids.update(column)
                     j += 1
-            res = opnic_id._put_columns_together(res, domain_ids)
-            total = 0
-            for rec in res['line']:
-                    total += rec
-            opinic_total = total
+            op_res = opnic_id._put_columns_together(op_res, op_domain_ids)
+            rec_total = 0
+            for rec in op_res['line']:
+                    rec_total += rec
+            opinic_total = rec_total
         for line in self:
             res = []
             debit_credit = len(comparison_table) == 1
             domain_ids = {'line'}
             k = 0
             for period in comparison_table:
-                date_from = period.get('datee_from', False)
+                date_from = period.get('date_from', False)
                 date_to = period.get('date_to', False) or period.get('date', False)
                 date_from, date_to, strict_range = line.with_context(date_from=date_from, date_to=date_to)._compute_date_range()
-
                 r = line.with_context(date_from=date_from,
                                       date_to=date_to,
                                       strict_range=strict_range)._eval_formula(financial_report,
@@ -445,9 +409,7 @@ class AccountFinancialReportLine(models.Model):
                 for column in r:
                     domain_ids.update(column)
                 k += 1
-
             res = line._put_columns_together(res, domain_ids)
-
             if line.hide_if_zero and all([float_is_zero(k, precision_rounding=currency_precision) for k in res['line']]):
                 continue
 
@@ -469,7 +431,7 @@ class AccountFinancialReportLine(models.Model):
                     domain_ids_line = {'line'}
                     debit_credit = len(comparison_table) == 1
                     for period in comparison_table:
-                            date_from = period.get('datee_from', False)
+                            date_from = period.get('date_from', False)
                             date_to = period.get('date_to', False) or period.get('date', False)
                             date_from, date_to, strict_range = per_id.with_context(date_from=date_from, date_to=date_to)._compute_date_range()
 
@@ -539,16 +501,18 @@ class AccountFinancialReportLine(models.Model):
                     })
             for vals in lines:
                 if len(comparison_table) == 2 and not options.get('groups'):
-                    if is_profit and line.code not in ['INTP', 'OTP', 'NTP']:
+                    if is_profit and line.code not in ['INTP', 'OTP', 'NTP'] and len(vals['columns']) > 2:
                         vals['columns'].insert(-1, line._build_cmp(vals['columns'][0]['name'], vals['columns'][1]['name']))
                     elif line.code not in ['INTP', 'OTP', 'NTP']:
                         vals['columns'].append(line._build_cmp(vals['columns'][0]['name'], vals['columns'][1]['name']))
                     elif is_profit and line.code in ['INTP', 'OTP', 'NTP']:
                         vals['columns'].insert(-1, line._build_cmp(0, 0))
+
                     if line.code not in ['INTP', 'OTP', 'NTP']:
+
                         for i in [0, 1]:
                             vals['columns'][i] = line._format(vals['columns'][i])
-                        if is_profit:
+                        if is_profit and len(vals['columns']) > 3:
                             vals['columns'][-1] = line._format(vals['columns'][-1])
                     # elif is_profit:
                     elif is_profit and line.code in ['INTP', 'OTP', 'NTP']:
@@ -561,22 +525,17 @@ class AccountFinancialReportLine(models.Model):
                         vals['columns'] = [line._build_percentage_total(v.get('name')) for v in vals['columns']]
                     else:
                         vals['columns'] = [line._format(v) for v in vals['columns']]
-                # if (is_profit):
-                #     if line.code in ['TOP', 'OIN', 'NEP', 'INC', 'GRP']:
-                #         rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total, True)
-                #     else:
-                #         rec_vals = line._build_cmp_percentage(res['line'][-1], opinic_total)
-                #     if vals.get('columns') and len(vals.get('columns')) > 2:
-                #         vals['columns'][-2] = rec_vals
-
                 if not line.formulas:
                     vals['columns'] = [{'name': ''} for k in vals['columns']]
             if len(lines) == 1:
                 new_lines = line.children_ids.with_context(opinic_total=opinic_total, is_profit = is_profit)._get_lines(financial_report, currency_table, options, linesDicts)
                 if new_lines and line.formulas:
                     if self.env.user.company_id.totals_below_sections:
-                        divided_lines = line.with_context(opinic_total=opinic_total, is_profit = is_profit)._divide_line(lines[0])
-                        result = [divided_lines[0]] + new_lines + [divided_lines[-1]]
+                        divided_lines = self.with_context(opinic_total=opinic_total, is_profit = is_profit)._divide_line(lines[0])
+                        if is_profit and line.code == 'INC':
+                            result = [divided_lines[0]] + new_lines
+                        else:
+                            result = [divided_lines[0]] + new_lines + [divided_lines[-1]]
                     else:
                         result = [lines[0]] + new_lines
                 else:
