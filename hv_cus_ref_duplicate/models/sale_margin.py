@@ -52,9 +52,69 @@ class SaleOrder(models.Model):
 
     _inherit = 'sale.order'
 
+    foc_required = fields.Boolean(compute='_get_foc_required',
+                                  string="Is FOC Required?",
+                                  store=True)
+    x_studio_branch = fields.Char(string="Branch")
+    # Below field moved from studio to here need motification
+    x_studio_foc = fields.Selection([
+        ('project_spares', 'Project Spares'),
+        # ("specialised_projects", "Specialised Projects"),
+        ("Sample", "Sample"),
+        ("Marketing", "Marketing"),
+        ("After Sales & Services", "After Sales & Services"),
+        ("Special Arrangement", "Special Arrangement"),
+        ("Swap Product", "Swap Product"),
+        ("Kit items", "Kit items")], string="FOC")
     margin_in_per = fields.Float(compute='_get_margin_in_percentage',
                                  string='Margin (%)',
                                  store=True)
+
+    @api.multi
+    @api.onchange('partner_id')
+    def onchange_partner_id(self):
+        """Onchange method to set the branch number."""
+        super(SaleOrder, self).onchange_partner_id()
+        self.x_studio_branch = \
+            self.partner_id and self.partner_id.x_studio_branch or ''
+
+    @api.onchange('x_studio_branch')
+    def onchange_x_studio_branch(self):
+        """Onchange method to set the partner based on the branch."""
+        res_obj = self.env['res.partner']
+        dom = []
+        if self.x_studio_branch:
+            dom.append(('x_studio_branch', '=', self.x_studio_branch))
+            if self.company_id:
+                dom.append(('company_id', '=',
+                            self.company_id and self.company_id.id or False))
+        if dom:
+            partner = res_obj.search(dom, limit=1)
+            if not partner:
+                self.partner_id = False
+            if partner:
+                address = partner.address_get(['delivery', 'invoice'])
+                self.partner_id = address and \
+                    address.get('contact', False) or partner.id or False
+                self.partner_invoice_id = address and \
+                    address.get('invoice', False) or \
+                    partner.id or False
+                self.partner_shipping_id = address and \
+                    address.get('delivery', False) or \
+                    partner.id or False
+
+    @api.multi
+    @api.depends('order_line', 'order_line.product_uom_qty',
+                 'order_line.price_unit', 'order_line.discount',
+                 'order_line.purchase_price')
+    def _get_foc_required(self):
+        """Method to get the status FOC Required or Not."""
+        for sal_ord in self:
+            sal_ord.foc_required = False
+            price_tot = sal_ord.order_line and \
+                sal_ord.order_line.mapped("price_unit")
+            if sal_ord.order_line and sum(price_tot) <= 0.0:
+                sal_ord.foc_required = True
 
     @api.multi
     @api.depends('order_line', 'order_line.product_uom_qty',
