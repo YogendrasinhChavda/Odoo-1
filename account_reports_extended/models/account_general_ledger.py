@@ -198,6 +198,11 @@ class AccountReport(models.AbstractModel):
             html = html.replace(b'<div class="js_account_report_footnotes"></div>', self.get_html_footnotes(footnotes_to_render))
         return html
 
+    @api.model
+    def get_currency(self, value):
+        currency_id = self.env.user.company_id.currency_id
+        return formatLang(self.env, value, currency_obj=currency_id)
+
     def get_xlsx(self, options, response):
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
