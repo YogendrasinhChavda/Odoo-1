@@ -94,8 +94,9 @@ class SaleOrder(models.Model):
                 self.partner_id = False
             if partner:
                 address = partner.address_get(['delivery', 'invoice'])
-                self.partner_id = address and \
-                    address.get('contact', False) or partner.id or False
+                # self.partner_id = address and \
+                #     address.get('contact', False) or partner.id or False
+                self.partner_id = partner and partner.id or False
                 self.partner_invoice_id = address and \
                     address.get('invoice', False) or \
                     partner.id or False
