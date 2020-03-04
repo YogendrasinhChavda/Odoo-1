@@ -44,13 +44,23 @@ odoo.define('skit_freeze_header.header', function (require) {
 
 	    /*********Start code for _renderBody********/
 	  	 _renderBody: function () {
+	     	this._super(); 
 	  		var self = this;
-	  		this._super(); 
 	     	var $rows = this._renderRows();
 	        while ($rows.length < 9) {
 	            $rows.push(this._renderEmptyRow());
 	        }
-	        return $('<tbody>').append($rows);
+	        var $body = $('<tbody>').append($rows);
+	     	if (this.hasHandle) {
+	            $body.sortable({
+	                axis: 'y',
+	                items: '> tr.o_data_row',
+	                helper: 'clone',
+	                handle: '.o_row_handle',
+	                stop: this._resequence.bind(this),
+	            });
+	        }
+	        return $body
 	     },
 	    /*********End code for _renderBody********/
 

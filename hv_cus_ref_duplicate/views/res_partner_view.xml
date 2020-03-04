@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherited Form view to add branch ( move from studio to here ) -->
+    <record id="view_partner_form_branch_inherit" model="ir.ui.view">
+        <field name="name">res.partner.form.branch.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_id']" position="after">
+                <field name="x_studio_branch" string="Branch"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
