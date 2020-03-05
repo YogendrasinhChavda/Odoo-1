@@ -24,7 +24,7 @@
                     <field name="levels" required="1"/>
                 </xpath>
                 <xpath expr="//field[@name='member_ids']" position="attributes">
-                    <attribute name="options"/>
+                    <attribute name="options">{'not_delete': False}</attribute>
                 </xpath>
                 <xpath expr="//notebook/page[@name='members']" position="after">
                     <page name="region_team_ids" string="Region Teams" attrs="{'invisible': [('levels', '!=', 'top_level')]}">

@@ -18,8 +18,8 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                                   ('yearly', 'Yearly')],
                                  string="Time Span",
                                  default="monthly")
-    # start_date = fields.Date(string="Start Date")
-    # end_date = fields.Date(string="End Date")
+    date_from = fields.Date(string="Start Date")
+    date_to = fields.Date(string="End Date")
     team_id = fields.Many2one("crm.team", string="Team")
     sales_ord_trg_achived = fields.Float(
         compute="compute_sales_billed_team_target",
@@ -42,12 +42,20 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                 # Pass granularity like year, quarter, month, week, day, hour
                 s_date = date_utils.start_of(curr_dt, 'quarter')
                 e_date = date_utils.end_of(curr_dt, 'quarter')
-            elif self.time_span == 'year':
+            elif self.time_span == 'yearly':
                 s_date = date_utils.start_of(curr_dt, 'year')
                 e_date = date_utils.end_of(curr_dt, 'year')
         return s_date, e_date
 
-    @api.depends('team_id', 'time_span')
+    @api.onchange('time_span')
+    def onchange_time_span(self):
+        """Onchange timespan to set the start and end date."""
+        s_date, e_date = self.get_timespan_start_end_dt()
+        if s_date and e_date:
+            self.date_from = s_date
+            self.date_to = e_date
+
+    @api.depends('team_id', 'time_span', 'date_from', 'date_to')
     def compute_sales_billed_team_target(self):
         """Compute method to calculate total achived target for Team."""
         sale_obj = self.env['sale.order']
@@ -55,7 +63,9 @@ class SalesBilledInvoiceTargetTeam(models.Model):
         for sale_tar_l in self:
             sale_team_id = sale_tar_l.team_id and \
                 sale_tar_l.team_id.id or False
-            s_date, e_date = sale_tar_l.get_timespan_start_end_dt()
+            s_date = sale_tar_l.date_from
+            e_date = sale_tar_l.date_to
+            # s_date, e_date = sale_tar_l.get_timespan_start_end_dt()
             sales = sale_obj.search([('confirmation_date', '>=', s_date),
                                      ('confirmation_date', '<=', e_date),
                                      ('team_id', '=', sale_team_id),
@@ -91,8 +101,8 @@ class SalesBilledInvoiceTarget(models.Model):
                                   ('yearly', 'Yearly')],
                                  string="Time Span",
                                  default="monthly")
-    # start_date = fields.Date(string="Start Date")
-    # end_date = fields.Date(string="End Date")
+    date_from = fields.Date(string="Start Date")
+    date_to = fields.Date(string="End Date")
     team_id = fields.Many2one("crm.team", string="Team")
     sales_ord_trg_achived = fields.Float(
         compute="compute_sales_billed_target",
@@ -115,10 +125,18 @@ class SalesBilledInvoiceTarget(models.Model):
                 # Pass granularity like year, quarter, month, week, day, hour
                 s_date = date_utils.start_of(curr_dt, 'quarter')
                 e_date = date_utils.end_of(curr_dt, 'quarter')
-            elif self.time_span == 'year':
+            elif self.time_span == 'yearly':
                 s_date = date_utils.start_of(curr_dt, 'year')
                 e_date = date_utils.end_of(curr_dt, 'year')
         return s_date, e_date
+
+    @api.onchange('time_span')
+    def onchange_time_span(self):
+        """Onchange timespan to set the start and end date."""
+        s_date, e_date = self.get_timespan_start_end_dt()
+        if s_date and e_date:
+            self.date_from = s_date
+            self.date_to = e_date
 
     @api.depends('team_id', 'sales_user_id',
                  'time_span')
@@ -129,7 +147,9 @@ class SalesBilledInvoiceTarget(models.Model):
         for sale_tar_l in self:
             sale_person = sale_tar_l.sales_user_id and \
                 sale_tar_l.sales_user_id.id or False
-            s_date, e_date = sale_tar_l.get_timespan_start_end_dt()
+            s_date = sale_tar_l.date_from
+            e_date = sale_tar_l.date_to
+            # s_date, e_date = sale_tar_l.get_timespan_start_end_dt()
             sales = sale_obj.search([('confirmation_date', '>=', s_date),
                                      ('confirmation_date', '<=', e_date),
                                      ('user_id', '=', sale_person),

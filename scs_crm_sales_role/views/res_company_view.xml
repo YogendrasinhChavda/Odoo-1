@@ -8,7 +8,7 @@
             <field name="inherit_id" ref="base.view_company_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//notebook" position="inside">
-                    <page string="Script Buttons">
+                    <page string="Script Buttons" invisible="1">
                         <separator name="Don't Click on this button if you are not aware."/>
                         <button name="update_sales_person_in_invoice_lines"
                             string="Update Sales Person In Invoice Lines"
@@ -18,7 +18,6 @@
                             string="Update Taxes Tags For Ccleen Company"
                             type="object"
                             class="oe_highlight"/>
-                        
                     </page>
                 </xpath>
             </field>

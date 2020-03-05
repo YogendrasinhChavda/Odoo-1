@@ -1,3 +1,10 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_sales_billed_invoice_target_usr,access.sales.billed.invoice.target.usr,model_sales_billed_invoice_target,,1,1,1,1
 access_sales_billed_invoice_target_team_usr,access.sales.billed.invoice.target.team.usr,model_sales_billed_invoice_target_team,,1,1,1,1
+access_sale_invoice_report_salesman,sale.invoice.report,model_sale_invoice_report,sales_team.group_sale_salesman,1,1,1,0
+access_sale_invoice_report_manager,sale.invoice.report,model_sale_invoice_report,sales_team.group_sale_manager,1,1,1,1
+access_top_most_sale_invoice_report_salesman,top.most.sale.invoice.report,model_top_most_sale_invoice_report,sales_team.group_sale_salesman,1,1,1,0
+access_top_most_sale_invoice_report_manager,top.most.sale.invoice.report,model_top_most_sale_invoice_report,sales_team.group_sale_manager,1,1,1,1
+
+access_top_most_sale_invoice_product_report_salesman,top.most.sale.invoice.product.report,model_top_most_sale_invoice_product_report,sales_team.group_sale_salesman,1,1,1,0
+access_top_most_sale_invoice_product_report_manager,top.most.sale.invoice.product.report,model_top_most_sale_invoice_product_report,sales_team.group_sale_manager,1,1,1,1
