@@ -54,7 +54,7 @@
         <field name="target">new</field>
     </record>
 
-<!--     <menuitem
+ <!--    <menuitem
         id="menu_wiz_bank_reconciliation"
         name="Bank Reconciliation Report"
         action="action_wiz_bank_reconciliation_report"

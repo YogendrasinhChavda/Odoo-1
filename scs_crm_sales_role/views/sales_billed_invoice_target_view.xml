@@ -9,13 +9,19 @@
             <form string="Sales Order vs Billed Invoice Target Team">
                 <sheet>
                     <group>
-                        <field name="team_id" required="1"/>
-                        <field name="sales_person_target"/>
-                        <field name="time_span" required="1"/>
-                        <!-- <field name="start_date" required="1"/>
-                        <field name="end_date" required="1"/> -->
-                        <field name="sales_ord_trg_achived"/>
-                        <field name="billed_inv_trg_achived"/>
+                        <group>
+                            <field name="team_id" required="1"/>
+                            <field name="time_span" required="1"/>
+                            <field name="date_from" required="1"/>
+                            <field name="date_to" required="1"/>
+                        </group>
+                        <group>
+                            <field name="sales_person_target"/>
+                            <!-- <field name="start_date" required="1"/>
+                            <field name="end_date" required="1"/> -->
+                            <field name="sales_ord_trg_achived"/>
+                            <field name="billed_inv_trg_achived"/>
+                        </group>
                     </group>
                 </sheet>
             </form>
@@ -67,15 +73,21 @@
             <form string="Sales Order vs Billed Invoice Target">
                 <sheet>
                     <group>
-                        <field name="team_id" required="1"/>
-                        <field name="sales_user_id" required="1"
-                            domain="[('id', 'in', sales_user_ids)]"/>
-                        <field name="sales_person_target"/>
-                        <field name="time_span" required="1"/>
-                        <!-- <field name="start_date" required="1"/>
-                        <field name="end_date" required="1"/> -->
-                        <field name="sales_ord_trg_achived"/>
-                        <field name="billed_inv_trg_achived"/>
+                        <group>
+                            <field name="team_id" required="1"/>
+                            <field name="sales_user_id" required="1"
+                                domain="[('id', 'in', sales_user_ids)]"/>
+                            <field name="time_span" required="1"/>
+                            <field name="date_from" required="1"/>
+                            <field name="date_to" required="1"/>
+                        </group>
+                        <group>
+                            <field name="sales_person_target"/>
+                            <!-- <field name="start_date" required="1"/>
+                            <field name="end_date" required="1"/> -->
+                            <field name="sales_ord_trg_achived"/>
+                            <field name="billed_inv_trg_achived"/>
+                        </group>
                     </group>
                     <notebook>
                         <page string="Sales Persons" invisible="1">

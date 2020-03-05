@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Sales Team Leader security group for CRM -->
+        <record id="group_sale_team_leader" model="res.groups">
+            <field name="name">Sales Team Leader</field>
+            <field name="category_id" ref="base.module_category_sales_management"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user')),(4, ref('sales_team.group_sale_salesman'))]"/>
+            <field name="comment">the user will have access to his own and his team members data in the sales application.</field>
+        </record>
+
+        <!-- Record Rule for Sales Team Leader for CRM Lead -->
+        <record id="crm_rule_for_sales_team_leader" model="ir.rule">
+            <field name="name">Sales Team Leader Leads Rule for see self and team leads</field>
+            <field ref="model_crm_lead" name="model_id"/>
+            <field name="domain_force">['|','|',('team_id.user_id','=',user.id),('team_id.parent_id.user_id','=',user.id),('team_id.parent_id.parent_id.user_id','=',user.id)]</field>
+            <field name="groups" eval="[(4, ref('scs_crm_sales_role.group_sale_team_leader'))]"/>
+        </record>
+
+        <!-- Record Rule for Sales Team Leader for Sale Order -->
+        <!-- <record id="sale_order_rule_sales_team_leader" model="ir.rule">
+            <field name="name">Sales Order Team Leader Sale Order Rule for see self and team orders</field>
+            <field ref="model_sale_order" name="model_id"/>
+            <field name="domain_force">['|',('team_id.user_id','=',user.id),('team_id.user_id','=',False)]</field>
+            <field name="groups" eval="[(4, ref('scs_crm_sales_role.group_sale_team_leader'))]"/>
+        </record> -->
+    </data>
+</odoo>

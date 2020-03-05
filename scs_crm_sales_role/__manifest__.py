@@ -19,11 +19,15 @@
 
     # Views
     'data': [
-        # "security/ir.model.access.csv",
-        # "views/crm_team_view.xml",
-        # "views/crm_lead_view.xml",
-        # "views/sales_billed_invoice_target_view.xml",
+        "security/sales_role_security.xml",
+        "security/ir.model.access.csv",
+        "views/crm_team_view.xml",
+        "views/crm_lead_view.xml",
+        "views/sales_billed_invoice_target_view.xml",
         "views/res_company_view.xml",
+        "report/sale_invoice_report_view.xml",
+        "report/top_most_sale_invoice_report_view.xml",
+        "report/top_most_sale_invoice_product_report_view.xml",
     ],
 
     # Techical
