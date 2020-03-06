@@ -276,9 +276,16 @@ class AccountReport(models.AbstractModel):
                 'align': 'center',
                 'valign': 'vcenter',
             })
+            merge_format_date = workbook.add_format({
+                'bold': True,
+                'align': 'left',
+                'valign': 'left',
+            })
             comapny_name = self.env.user.company_id and self.env.user.company_id.name or ''
+            today_date = 'Date : ' + str(fields.date.today())
             sheet.merge_range(0, 0, 1, len(header[0]) - 1, comapny_name, merge_format)
             sheet.merge_range(2, 0, 2, len(header[0]) - 1, self._get_report_name() , merge_format)
+            sheet.merge_range(3, 0, 3, len(header[0]) - 1, today_date, merge_format_date)
         for row in self.with_context({'is_profit': is_profit}).get_header(options):
             y_offset = y_offset + 5
             x = 0
