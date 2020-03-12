@@ -87,6 +87,7 @@ class WizBankReconciliationReport(models.TransientModel):
         """Method to export bank reconciliation report."""
         cr, uid, context = self.env.args
         wiz_exported_obj = self.env['wiz.bank.reconciliation.report.exported']
+        move_l_obj = self.env['account.move.line']
         # sheet Development
         file_path = 'Bank Reconcilition Report.xlsx'
         workbook = xlsxwriter.Workbook('/tmp/' + file_path)
@@ -158,61 +159,49 @@ class WizBankReconciliationReport(models.TransientModel):
         })
         to_date = ''
         from_date = ''
-        prev_year_to_date = self.date_to
         prev_year_from_date = self.date_from
+        prev_year_to_date = self.date_to
         if self.date_from:
             from_date = datetime.strftime(self.date_from, '%d/%m/%Y')
-            to_dt = self.date_from
-            to_year = self.date_from.year
+            from_dt = self.date_from
+            from_year = self.date_from.year
+            f_dt = self.date_from
             prev_year_from_date = \
-                to_dt.replace(day=1, month=1, year=to_year - 1)
+                from_dt.replace(day=1, month=1, year=from_year - 1)
+            prev_year_to_date = f_dt.replace(day=31,
+                                             month=12, year=from_year - 1)
 
         if self.date_to:
             to_date = datetime.strftime(self.date_to, '%d/%m/%Y')
             f_dt = self.date_to
-            f_year = self.date_to.year
-            prev_year_to_date = f_dt.replace(day=31, month=12, year=f_year - 1)
+            # f_year = self.date_to.year
+            # prev_year_to_date = f_dt.replace(day=31,
+            #                                  month=12, year=f_year - 1)
 
         company_name = self.company_id and self.company_id.name or ''
         for journal in self.journal_ids:
             # print("\n prev_year_from_date :::::::", prev_year_from_date)
             # print("\n prev_year_to_date :::::::::", prev_year_to_date)
-            prev_cust_payments = self.env['account.payment'].search([
-                ('payment_date', '>=', prev_year_from_date),
-                ('payment_date', '<=', prev_year_to_date),
-                ('payment_type', '=', 'inbound'),
-                ('journal_id', '=', journal.id),
-                ('state', 'in', ['reconciled'])],
-                order='payment_date')
-            tot_prev_cust_payments = sum(prev_cust_payments.mapped('amount'))
+            # prev_cust_payments = self.env['account.payment'].search([
+            #     ('payment_date', '>=', prev_year_from_date),
+            #     ('payment_date', '<=', prev_year_to_date),
+            #     ('payment_type', '=', 'inbound'),
+            #     ('journal_id', '=', journal.id),
+            #     ('state', 'in', ['reconciled'])],
+            #     order='payment_date')
+            # tot_prev_cust_payments = sum(prev_cust_payments.mapped('amount'))
 
-            prev_vendor_payments = self.env['account.payment'].search([
-                ('payment_date', '>=', prev_year_from_date),
-                ('payment_date', '<=', prev_year_to_date),
-                ('payment_type', '=', 'outbound'),
-                ('journal_id', '=', journal.id),
-                ('state', 'in', ['reconciled'])],
-                order='payment_date')
-            tot_prev_vendor_payments = \
-                sum(prev_vendor_payments.mapped('amount'))
+            # prev_vendor_payments = self.env['account.payment'].search([
+            #     ('payment_date', '>=', prev_year_from_date),
+            #     ('payment_date', '<=', prev_year_to_date),
+            #     ('payment_type', '=', 'outbound'),
+            #     ('journal_id', '=', journal.id),
+            #     ('state', 'in', ['reconciled'])],
+            #     order='payment_date')
+            # tot_prev_vendor_payments = \
+            #     sum(prev_vendor_payments.mapped('amount'))
 
-            cust_payments = self.env['account.payment'].search([
-                ('payment_date', '>=', self.date_from),
-                ('payment_date', '<=', self.date_to),
-                ('payment_type', '=', 'inbound'),
-                ('journal_id', '=', journal.id),
-                ('state', 'in', ['reconciled'])],
-                order='payment_date')
-
-            vendor_payments = self.env['account.payment'].search([
-                ('payment_date', '>=', self.date_from),
-                ('payment_date', '<=', self.date_to),
-                ('payment_type', '=', 'outbound'),
-                ('journal_id', '=', journal.id),
-                ('state', 'in', ['reconciled'])],
-                order='payment_date')
-
-            # cust_payments = self.env['account.move.line'].search([
+            # cust_payments = self.env['account.payment'].search([
             #     ('payment_date', '>=', self.date_from),
             #     ('payment_date', '<=', self.date_to),
             #     ('payment_type', '=', 'inbound'),
@@ -220,13 +209,162 @@ class WizBankReconciliationReport(models.TransientModel):
             #     ('state', 'in', ['reconciled'])],
             #     order='payment_date')
 
-            # vendor_payments = self.env['account.move.line'].search([
+            # vendor_payments = self.env['account.payment'].search([
             #     ('payment_date', '>=', self.date_from),
             #     ('payment_date', '<=', self.date_to),
             #     ('payment_type', '=', 'outbound'),
             #     ('journal_id', '=', journal.id),
             #     ('state', 'in', ['reconciled'])],
             #     order='payment_date')
+
+            print("\n journal ::::::::::", journal)
+
+            pre_reconcile_cust_aml_domain = \
+                ['&',
+                 ('move_id.journal_id.type', 'in', ('cash', 'bank')),
+                 ('move_id.journal_id', '=', journal.id),
+                 # '|', ('statement_line_id', '!=', False), '&',
+                 # ('statement_line_id.date', '>=', prev_year_from_date),
+                 # ('statement_line_id.date', '<=', prev_year_to_date),
+                 # ('user_type_id.type', '=', 'liquidity'),
+                 ('credit', '>', 0.0),
+                 ('full_reconcile_id', '!=', False),
+                 ('date', '>=', prev_year_from_date),
+                 ('date', '<=', prev_year_to_date),
+                 ('payment_id.payment_type', '=', 'inbound')]
+            pre_reconcile_cust_lines = \
+                move_l_obj.search(pre_reconcile_cust_aml_domain)
+            tot_pre_reconcile_cust_lines = \
+                sum(pre_reconcile_cust_lines.mapped('credit'))
+
+            pre_reconcile_vend_aml_domain = \
+                ['&',
+                 ('move_id.journal_id.type', 'in', ('cash', 'bank')),
+                 ('move_id.journal_id', '=', journal.id),
+                 # '|', ('statement_line_id', '!=', False), '&',
+                 # ('statement_line_id.date', '>=', prev_year_from_date),
+                 # ('statement_line_id.date', '<=', prev_year_to_date),
+                 # ('user_type_id.type', '=', 'liquidity'),
+                 ('debit', '>', 0.0),
+                 ('full_reconcile_id', '!=', False),
+                 ('date', '>=', prev_year_from_date),
+                 ('date', '<=', prev_year_to_date),
+                 ('payment_id.payment_type', '=', 'outbound')]
+            pre_reconcile_vend_lines = \
+                move_l_obj.search(pre_reconcile_vend_aml_domain)
+            tot_pre_reconcile_vend_lines = \
+                sum(pre_reconcile_vend_lines.mapped('debit'))
+
+            pre_unreconcile_cust_aml_domain = \
+                ['&',
+                 ('move_id.journal_id.type', 'in', ('cash', 'bank')),
+                 ('move_id.journal_id', '=', journal.id),
+                 # '|', ('statement_line_id', '=', False),
+                 # ('statement_line_id.date', '>', prev_year_to_date),
+                 # ('user_type_id.type', '=', 'liquidity'),
+                 ('credit', '>', 0.0),
+                 ('full_reconcile_id', '=', False),
+                 ('date', '>=', prev_year_from_date),
+                 ('date', '<=', prev_year_to_date),
+                 ('payment_id.payment_type', '=', 'inbound')]
+            pre_unreconcile_cust_lines = move_l_obj.search(
+                pre_unreconcile_cust_aml_domain)
+            tot_pre_unreconcile_cust_lines = \
+                sum(pre_unreconcile_cust_lines.mapped('credit'))
+
+            pre_unreconcile_vend_aml_domain = \
+                ['&',
+                 ('move_id.journal_id.type', 'in', ('cash', 'bank')),
+                 ('move_id.journal_id', '=', journal.id),
+                 # '|', ('statement_line_id', '=', False),
+                 # ('statement_line_id.date', '>', prev_year_to_date),
+                 # ('user_type_id.type', '=', 'liquidity'),
+                 ('debit', '>', 0.0),
+                 ('full_reconcile_id', '=', False),
+                 ('date', '>=', prev_year_from_date),
+                 ('date', '<=', prev_year_to_date),
+                 ('payment_id.payment_type', '=', 'outbound')]
+            pre_unreconcile_vend_lines = move_l_obj.search(
+                pre_unreconcile_vend_aml_domain)
+            tot_pre_unreconcile_vend_lines = \
+                sum(pre_unreconcile_vend_lines.mapped('debit'))
+
+            # --------------------------------------------------------------
+
+            reconcile_cust_aml_domain = \
+                ['&',
+                 ('move_id.journal_id.type', 'in', ('cash', 'bank')),
+                 ('move_id.journal_id', '=', journal.id),
+                 # ('statement_line_id', '!=', False),
+                 # '&',
+                 # ('statement_line_id.date', '>=', self.date_from),
+                 # ('statement_line_id.date', '<=', self.date_to),
+                 # ('user_type_id.type', '=', 'liquidity'),
+                 # ('reconciled', '=', True),
+                 ('credit', '>', 0.0),
+                 ('full_reconcile_id', '!=', False),
+                 ('date', '>=', self.date_from),
+                 ('date', '<=', self.date_to),
+                 ('payment_id.payment_type', '=', 'inbound')]
+            reconcile_cust_lines = \
+                move_l_obj.search(reconcile_cust_aml_domain)
+            print("\n reconcile_cust_lines ::::::::", reconcile_cust_lines)
+            tot_reconcile_cust_lines = \
+                sum(reconcile_cust_lines.mapped('credit'))
+            print("\n tot_reconcile_cust_lines ::::::::::",
+                  tot_reconcile_cust_lines)
+
+            reconcile_vend_aml_domain = \
+                ['&',
+                 ('move_id.journal_id.type', 'in', ('cash', 'bank')),
+                 ('move_id.journal_id', '=', journal.id),
+                 # '|', ('statement_line_id', '!=', False), '&',
+                 # ('statement_line_id.date', '>=', self.date_from),
+                 # ('statement_line_id.date', '<=', self.date_to),
+                 # ('user_type_id.type', '=', 'liquidity'),
+                 ('debit', '>', 0.0),
+                 ('full_reconcile_id', '!=', False),
+                 ('date', '>=', self.date_from),
+                 ('date', '<=', self.date_to),
+                 ('payment_id.payment_type', '=', 'outbound')]
+            reconcile_vend_lines = \
+                move_l_obj.search(reconcile_vend_aml_domain)
+            tot_reconcile_vend_lines = \
+                sum(reconcile_vend_lines.mapped('debit'))
+
+            unreconcile_cust_aml_domain = \
+                ['&',
+                 ('move_id.journal_id.type', 'in', ('cash', 'bank')),
+                 ('move_id.journal_id', '=', journal.id),
+                 # '|', ('statement_line_id', '=', False),
+                 # ('statement_line_id.date', '>', self.date_to),
+                 # ('user_type_id.type', '=', 'liquidity'),
+                 ('credit', '>', 0.0),
+                 ('full_reconcile_id', '=', False),
+                 ('date', '>=', self.date_from),
+                 ('date', '<=', self.date_to),
+                 ('payment_id.payment_type', '=', 'inbound')]
+            unreconcile_cust_lines = move_l_obj.search(
+                unreconcile_cust_aml_domain)
+            tot_unreconcile_cust_lines = \
+                sum(unreconcile_cust_lines.mapped('credit'))
+
+            unreconcile_vend_aml_domain = \
+                ['&',
+                 ('move_id.journal_id.type', 'in', ('cash', 'bank')),
+                 ('move_id.journal_id', '=', journal.id),
+                 # '|', ('statement_line_id', '=', False),
+                 # ('statement_line_id.date', '>', self.date_to),
+                 # ('user_type_id.type', '=', 'liquidity'),
+                 ('debit', '>', 0.0),
+                 ('full_reconcile_id', '=', False),
+                 ('date', '>=', self.date_from),
+                 ('date', '<=', self.date_to),
+                 ('payment_id.payment_type', '=', 'outbound')]
+            unreconcile_vend_lines = move_l_obj.search(
+                unreconcile_vend_aml_domain)
+            tot_unreconcile_vend_lines = \
+                sum(unreconcile_vend_lines.mapped('debit'))
 
             worksheet = workbook.add_worksheet(journal.name)
 
@@ -278,16 +416,28 @@ class WizBankReconciliationReport(models.TransientModel):
             col = 0
             row += 1
             tot_cust_payment = 0.0
-            for cust_pay in cust_payments:
-                tot_cust_payment = tot_cust_payment + cust_pay.amount or 0.0
-                partner = cust_pay.partner_id and \
-                    cust_pay.partner_id.name or ''
+            for cust_pay_line in reconcile_cust_lines:
+                tot_cust_payment = tot_cust_payment + \
+                    cust_pay_line.credit or 0.0
                 # journal = cust_pay.journal_id and \
                 #    cust_pay.journal_id.name or ''
                 payment_date = ''
-                if cust_pay.payment_date:
+                if cust_pay_line.date:
                     payment_date = \
-                        datetime.strftime(cust_pay.payment_date, '%d-%m-%Y')
+                        datetime.strftime(cust_pay_line.date, '%d-%m-%Y')
+
+                cust_pay_name = cust_pay_line.name or ''
+                partner = cust_pay_line.partner_id and \
+                    cust_pay_line.partner_id.name or ''
+                cust_pay_memo = cust_pay_line.name or ''
+                if cust_pay_line.payment_id:
+                    cust_pay_name = cust_pay_line.payment_id.name or ''
+                    cust_pay_memo = \
+                        cust_pay_line.payment_id.communication or ''
+                    if cust_pay_line.payment_id.partner_id:
+                        partner = cust_pay_line.payment_id and \
+                            cust_pay_line.payment_id.partner_id and \
+                            cust_pay_line.payment_id.partner_id.name or ''
 
                 worksheet.write(row, col, ' ', cell_c_fmat)
                 col += 1
@@ -295,7 +445,7 @@ class WizBankReconciliationReport(models.TransientModel):
                 col += 1
                 worksheet.write(row, col, payment_date, cell_c_fmat)
                 col += 1
-                worksheet.write(row, col, cust_pay.name or '', cell_l_fmat)
+                worksheet.write(row, col, cust_pay_name or '', cell_l_fmat)
                 col += 1
                 # worksheet.write(row, col,
                 #                 PAY_TYPE.get(cust_pay.payment_type, ''),
@@ -307,10 +457,10 @@ class WizBankReconciliationReport(models.TransientModel):
                 # col += 1
                 worksheet.write(row, col, partner, cell_l_fmat)
                 col += 1
-                worksheet.write(row, col, cust_pay.communication or '',
-                                cell_l_fmat)
+                worksheet.write(row, col, cust_pay_memo or '', cell_l_fmat)
                 col += 1
-                worksheet.write(row, col, cust_pay.amount or 0.0, cell_r_fmat)
+                worksheet.write(row, col, cust_pay_line.credit or 0.0,
+                                cell_r_fmat)
                 col = 0
                 row += 1
 
@@ -349,15 +499,27 @@ class WizBankReconciliationReport(models.TransientModel):
             col = 0
             row += 1
             tot_vend_payment = 0.0
-            for ven_pay in vendor_payments:
-                tot_vend_payment = tot_vend_payment + ven_pay.amount
-                partner = ven_pay.partner_id and ven_pay.partner_id.name or ''
+            for vend_pay_line in reconcile_vend_lines:
+                tot_vend_payment = tot_vend_payment + vend_pay_line.debit
                 # journal = ven_pay.journal_id and \
                 #    ven_pay.journal_id.name or ''
                 payment_date = ''
-                if ven_pay.payment_date:
+                if vend_pay_line.date:
                     payment_date = \
-                        datetime.strftime(ven_pay.payment_date, '%d-%m-%Y')
+                        datetime.strftime(vend_pay_line.date, '%d-%m-%Y')
+
+                vend_pay_name = vend_pay_line.name or ''
+                partner = vend_pay_line.partner_id and \
+                    vend_pay_line.partner_id.name or ''
+                vend_pay_memo = vend_pay_line.name or ''
+                if vend_pay_line.payment_id:
+                    cust_pay_name = vend_pay_line.payment_id.name or ''
+                    cust_pay_memo = \
+                        vend_pay_line.payment_id.communication or ''
+                    if vend_pay_line.payment_id.partner_id:
+                        partner = vend_pay_line.payment_id and \
+                            vend_pay_line.payment_id.partner_id and \
+                            vend_pay_line.payment_id.partner_id.name or ''
 
                 worksheet.write(row, col, ' ', cell_c_fmat)
                 col += 1
@@ -365,7 +527,7 @@ class WizBankReconciliationReport(models.TransientModel):
                 col += 1
                 worksheet.write(row, col, payment_date, cell_c_fmat)
                 col += 1
-                worksheet.write(row, col, ven_pay.name or '', cell_l_fmat)
+                worksheet.write(row, col, vend_pay_name or '', cell_l_fmat)
                 col += 1
                 # worksheet.write(row, col,
                 #                 PAY_TYPE.get(ven_pay.payment_type, ''),
@@ -377,10 +539,10 @@ class WizBankReconciliationReport(models.TransientModel):
                 # col += 1
                 worksheet.write(row, col, partner, cell_l_fmat)
                 col += 1
-                worksheet.write(
-                    row, col, ven_pay.communication or '', cell_l_fmat)
+                worksheet.write(row, col, vend_pay_memo or '', cell_l_fmat)
                 col += 1
-                worksheet.write(row, col, ven_pay.amount or '', cell_r_fmat)
+                worksheet.write(row, col, vend_pay_line.debit or '',
+                                cell_r_fmat)
                 col = 0
                 row += 1
 
@@ -394,7 +556,7 @@ class WizBankReconciliationReport(models.TransientModel):
             worksheet.merge_range(row, 0, row, 3,
                                   'Total - Reconciled', header_cell_l_fmat)
             filter_bal = tot_cust_payment + tot_vend_payment
-            worksheet.write(row, 6,  filter_bal or 0.0,
+            worksheet.write(row, 6, filter_bal or 0.0,
                             cell_r_bold_noborder)
             row += 1
             worksheet.merge_range(
@@ -402,7 +564,8 @@ class WizBankReconciliationReport(models.TransientModel):
                 'Last Reconciled Statement Balance - ' +
                 ustr(prev_year_to_date),
                 header_cell_l_fmat)
-            prev_bal = tot_prev_vendor_payments + tot_prev_cust_payments
+            prev_bal = tot_pre_reconcile_vend_lines + \
+                tot_pre_reconcile_cust_lines
             worksheet.write(row, 6, prev_bal, cell_r_bold_noborder)
             row += 1
             curr_bal = filter_bal + prev_bal
@@ -422,6 +585,81 @@ class WizBankReconciliationReport(models.TransientModel):
             worksheet.write(row, 6, 0.0, cell_r_bold_noborder)
             row += 1
             worksheet.merge_range(row, 0, row, 3, 'Unreconciled',
+                                  header_cell_l_fmat)
+            worksheet.write(row, 6, 0.0, cell_r_bold_noborder)
+            row += 1
+            worksheet.merge_range(row, 0, row, 3,
+                                  'Uncleared  Checks and Payments',
+                                  header_cell_l_fmat)
+            worksheet.write(row, 6, 0.0, cell_r_bold_noborder)
+
+            col = 0
+            row += 1
+            tot_unreconcile_cust_payment = 0.0
+            for cust_unrecon_l in unreconcile_cust_lines:
+                tot_unreconcile_cust_payment = tot_unreconcile_cust_payment + \
+                    cust_unrecon_l.credit or 0.0
+                # journal = cust_pay.journal_id and \
+                #    cust_pay.journal_id.name or ''
+                payment_date = ''
+                if cust_unrecon_l.date:
+                    payment_date = \
+                        datetime.strftime(cust_unrecon_l.date, '%d-%m-%Y')
+
+                cust_unrecon_pay_name = cust_unrecon_l.name or ''
+                partner = cust_unrecon_l.partner_id and \
+                    cust_unrecon_l.partner_id.name or ''
+                cust_unrecon_pay_memo = cust_unrecon_l.name or ''
+                if cust_unrecon_l.payment_id:
+                    cust_unrecon_pay_name = \
+                        cust_unrecon_l.payment_id.name or ''
+                    cust_unrecon_pay_memo = \
+                        cust_unrecon_l.payment_id.communication or ''
+                    if cust_unrecon_l.payment_id.partner_id:
+                        partner = cust_unrecon_l.payment_id and \
+                            cust_unrecon_l.payment_id.partner_id and \
+                            cust_unrecon_l.payment_id.partner_id.name or ''
+
+                worksheet.write(row, col, ' ', cell_c_fmat)
+                col += 1
+                worksheet.write(row, col, 'Payment', cell_c_fmat)
+                col += 1
+                worksheet.write(row, col, payment_date, cell_c_fmat)
+                col += 1
+                worksheet.write(row, col, cust_unrecon_pay_name or '',
+                                cell_l_fmat)
+                col += 1
+                # worksheet.write(row, col,
+                #                 PAY_TYPE.get(cust_pay.payment_type, ''),
+                #                 cell_l_fmat)
+                # col += 1
+                # worksheet.write(row, col,
+                #                 PARTNER_TYPE.get(cust_pay.partner_type, ''),
+                #                 cell_l_fmat)
+                # col += 1
+                worksheet.write(row, col, partner, cell_l_fmat)
+                col += 1
+                worksheet.write(row, col, cust_unrecon_pay_memo or '',
+                                cell_l_fmat)
+                col += 1
+                worksheet.write(row, col, cust_unrecon_l.credit or 0.0,
+                                cell_r_fmat)
+                col = 0
+                row += 1
+            row += 1
+            worksheet.merge_range(row, 1, row, 4,
+                                  'Total - Uncleared Checks and Payments',
+                                  header_cell_l_fmat)
+            worksheet.write(row, 6, tot_unreconcile_cust_payment or 0.0,
+                            cell_r_bold_noborder)
+            worksheet.merge_range(row, 1, row, 4,
+                                  'Total - Unreconciled',
+                                  header_cell_l_fmat)
+            worksheet.write(row, 6, tot_unreconcile_cust_payment or 0.0,
+                            cell_r_bold_noborder)
+            row += 1
+            worksheet.merge_range(row, 0, row, 3,
+                                  'Total as of ' + ustr(to_date),
                                   header_cell_l_fmat)
             worksheet.write(row, 6, 0.0, cell_r_bold_noborder)
 
