@@ -15,7 +15,7 @@
     'website': 'http://www.serpentcs.com',
 
     # Dependencies
-    'depends': ['crm'],
+    'depends': ['crm', 'sale', 'account'],
 
     # Views
     'data': [

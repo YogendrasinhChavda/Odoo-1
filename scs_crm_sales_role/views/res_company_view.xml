@@ -14,10 +14,10 @@
                             string="Update Sales Person In Invoice Lines"
                             type="object"
                             class="oe_highlight"/>
-                        <button name="update_taxes_tags"
+<!--                         <button name="update_taxes_tags"
                             string="Update Taxes Tags For Ccleen Company"
                             type="object"
-                            class="oe_highlight"/>
+                            class="oe_highlight"/> -->
                     </page>
                 </xpath>
             </field>

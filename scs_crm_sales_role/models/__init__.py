@@ -4,3 +4,4 @@
 from . import crm_team
 from . import sales_billed_invoice_target
 from . import res_company
+from . import account_invoice_line
