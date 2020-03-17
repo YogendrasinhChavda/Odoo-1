@@ -25,6 +25,7 @@
         "views/crm_lead_view.xml",
         "views/sales_billed_invoice_target_view.xml",
         "views/res_company_view.xml",
+        "views/res_partner_view.xml",
         "report/sale_invoice_report_view.xml",
         "report/top_most_sale_invoice_report_view.xml",
         "report/top_most_sale_invoice_product_report_view.xml",
