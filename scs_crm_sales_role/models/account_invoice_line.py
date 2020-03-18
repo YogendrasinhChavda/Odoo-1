@@ -1,6 +1,6 @@
 """Account Invoice Line Model."""
 
-from odoo import fields, models, api
+from odoo import fields, models
 
 
 class AccountInvoiceLine(models.Model):
@@ -32,6 +32,10 @@ class AccountInvoiceLine(models.Model):
         related="sale_line_ids.order_id.partner_id.state_id",
         store=True,
         string="State")
+    x_studio_country = fields.Many2one(
+        related="sale_line_ids.order_id.partner_id.country_id",
+        store=True,
+        string="Country")
 
     # @api.multi
     # @api.depends('partner_id', 'partner_id.user_id',
