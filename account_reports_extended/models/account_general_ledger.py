@@ -171,8 +171,12 @@ class AccountReport(models.AbstractModel):
                     line['footnote'] = str(number)
                     footnotes_to_render.append(
                         {'id': f.id, 'number': number, 'text': f.text})
+        ctx_rec = dict(self.env.context)
+        ctx_rec.update({
+            'is_profit': is_profit
+        })
         rcontext = {'report': report,
-                    'lines': {'columns_header': self.with_context({'is_profit': is_profit}).get_header(options), 'lines': lines},
+                    'lines': {'columns_header': self.with_context(ctx_rec).get_header(options), 'lines': lines},
                     'options': options,
                     'context': self.env.context,
                     'model': self,
@@ -268,8 +272,9 @@ class AccountReport(models.AbstractModel):
             else:
                 sheet.write(0, x, cell_content, super_col_style)
                 x += 1
-        header = self.with_context(
-            {'is_profit': is_profit}).get_header(options)
+        ctx = self._set_context(options)
+        ctx.update({'is_profit': is_profit})
+        header = self.get_header(options)
         if len(header) > 0:
             merge_format = workbook.add_format({
                 'bold': True,
