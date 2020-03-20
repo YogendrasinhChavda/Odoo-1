@@ -168,6 +168,8 @@ class WizBankReconciliationReport(models.TransientModel):
             f_dt = self.date_from
             prev_year_from_date = \
                 from_dt.replace(day=1, month=1, year=from_year - 1)
+            # prev_year_from_date = datetime.strftime(
+            #     prev_year_from_date, '%d/%m/%Y')
             prev_year_to_date = f_dt.replace(day=31,
                                              month=12, year=from_year - 1)
 
@@ -216,8 +218,6 @@ class WizBankReconciliationReport(models.TransientModel):
             #     ('journal_id', '=', journal.id),
             #     ('state', 'in', ['reconciled'])],
             #     order='payment_date')
-
-            print("\n journal ::::::::::", journal)
 
             pre_reconcile_cust_aml_domain = \
                 ['&',
@@ -308,11 +308,8 @@ class WizBankReconciliationReport(models.TransientModel):
                  ('payment_id.payment_type', '=', 'inbound')]
             reconcile_cust_lines = \
                 move_l_obj.search(reconcile_cust_aml_domain)
-            print("\n reconcile_cust_lines ::::::::", reconcile_cust_lines)
             tot_reconcile_cust_lines = \
                 sum(reconcile_cust_lines.mapped('credit'))
-            print("\n tot_reconcile_cust_lines ::::::::::",
-                  tot_reconcile_cust_lines)
 
             reconcile_vend_aml_domain = \
                 ['&',
@@ -559,10 +556,12 @@ class WizBankReconciliationReport(models.TransientModel):
             worksheet.write(row, 6, filter_bal or 0.0,
                             cell_r_bold_noborder)
             row += 1
+            prev_year_to_date_str = datetime.strftime(
+                prev_year_to_date, '%d/%m/%Y')
             worksheet.merge_range(
                 row, 0, row, 3,
                 'Last Reconciled Statement Balance - ' +
-                ustr(prev_year_to_date),
+                ustr(prev_year_to_date_str),
                 header_cell_l_fmat)
             prev_bal = tot_pre_reconcile_vend_lines + \
                 tot_pre_reconcile_cust_lines
