@@ -20,7 +20,7 @@
     'data': [
         'wizard/wiz_bank_reconciliation_report_view.xml',
         'data/account_financial_report_data.xml',
-        'views/total_report.xml'
+        'views/followup_view.xml',
     ],
 
     # Techical
