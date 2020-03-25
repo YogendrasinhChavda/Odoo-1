@@ -525,6 +525,7 @@ class WizBankReconciliationReport(models.TransientModel):
                 worksheet.write(row, col, payment_date, cell_c_fmat)
                 col += 1
                 worksheet.write(row, col, vend_pay_name or '', cell_l_fmat)
+
                 col += 1
                 # worksheet.write(row, col,
                 #                 PAY_TYPE.get(ven_pay.payment_type, ''),
@@ -565,6 +566,7 @@ class WizBankReconciliationReport(models.TransientModel):
                 header_cell_l_fmat)
             prev_bal = tot_pre_reconcile_vend_lines + \
                 tot_pre_reconcile_cust_lines
+
             worksheet.write(row, 6, prev_bal, cell_r_bold_noborder)
             row += 1
             curr_bal = filter_bal + prev_bal

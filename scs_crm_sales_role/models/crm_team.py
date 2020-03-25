@@ -3,6 +3,18 @@
 from odoo import fields, models
 
 
+class ResUsers(models.Model):
+    """Res Users Model."""
+
+    _inherit = "res.users"
+
+    # Below fields added to calculate sales target
+    sale_person_orders_ids = fields.One2many('sale.order', 'user_id',
+                                             string="Sales Person Orders")
+    sale_person_invoice_ids = fields.One2many('account.invoice', 'user_id',
+                                              string="Sales Person Invoices")
+
+
 class CrmTeam(models.Model):
     """CRM Team Model."""
 
@@ -12,6 +24,12 @@ class CrmTeam(models.Model):
                                ('second_level', 'Second Level'),
                                ('third_level', 'Third Level')],
                               string="Levels")
+    regions = fields.Selection([('eastern', 'Eastern'),
+                                ('western', 'Western'),
+                                ('northern', 'Northern'),
+                                ('southern', 'Southern')],
+                               default='northern',
+                               string="Regions")
     member_ids = fields.Many2many('res.users', 'crm_team_users_rel',
                                   'crm_team_id', 'user_id',
                                   string='Channel Members')
@@ -20,6 +38,11 @@ class CrmTeam(models.Model):
                                       string="Region Teams")
     states_team_ids = fields.One2many('crm.team', 'parent_id',
                                       string="States Teams")
+    # Below fields added to calculate sales target
+    sale_team_orders_ids = fields.One2many('sale.order', 'team_id',
+                                           string="Sales Team Orders")
+    sale_team_invoice_ids = fields.One2many('account.invoice', 'team_id',
+                                            string="Sales Team Invoices")
 
     # @api.onchange('levels')
     # def onchange_levels(self):
