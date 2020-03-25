@@ -10,6 +10,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='name']" position="after">
                     <field name="levels" required="1"/>
+                    <field name="regions"/>
                 </xpath>
             </field>
         </record>
@@ -22,6 +23,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='team_type']" position="after">
                     <field name="levels" required="1"/>
+                    <field name="regions"/>
                 </xpath>
                 <xpath expr="//field[@name='member_ids']" position="attributes">
                     <attribute name="options">{'not_delete': False}</attribute>
@@ -33,6 +35,7 @@
                             <tree string="Region Teams">
                                 <field name="name"/>
                                 <field name="levels" required="1"/>
+                                <field name="regions"/>
                                 <field name="team_type"/>
                                 <field name="active" invisible="1"/>
                                 <field name="user_id"/>
@@ -46,12 +49,25 @@
                             <tree string="States Teams">
                                 <field name="name"/>
                                 <field name="levels" required="1"/>
+                                <field name="regions"/>
                                 <field name="team_type"/>
                                 <field name="active" invisible="1"/>
                                 <field name="user_id"/>
                                 <field name="parent_id" invisible="1"/>
                             </tree>
                         </field>
+                    </page>
+<!--                     <page>
+                        <field name="sale_person_orders_ids"/>
+                    </page>
+                    <page>
+                        <field name="sale_person_invoice_ids"/>
+                    </page> -->
+                    <page string="Sales Team Orders" invisible="1">
+                        <field name="sale_team_orders_ids"/>
+                    </page>
+                    <page string="Sales Team Invoices" invisible="1">
+                        <field name="sale_team_invoice_ids"/>
                     </page>
                 </xpath>
             </field>

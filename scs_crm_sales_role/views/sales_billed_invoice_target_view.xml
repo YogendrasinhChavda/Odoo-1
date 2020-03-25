@@ -7,22 +7,42 @@
         <field name="model">sales.billed.invoice.target.team</field>
         <field name="arch" type="xml">
             <form string="Sales Order vs Billed Invoice Target Team">
+                <header>
+                    <button name="action_open_target" type="object" states="draft"
+                        string="In Progress" class="oe_highlight"/>
+                    <button name="action_set_to_draft_target" type="object" states="open"
+                        string="Set to Draft" class="oe_highlight"/>
+                    <button name="action_set_to_done" type="object" states="open"
+                        string="Done" class="oe_highlight"/>
+                    <button name="action_set_to_cancel" type="object" states="draft,open"
+                        string="Cancel" class="oe_highlight"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
                             <field name="team_id" required="1"/>
+                            <field name="regions"/>
                             <field name="time_span" required="1"/>
                             <field name="date_from" required="1"/>
                             <field name="date_to" required="1"/>
                         </group>
                         <group>
-                            <field name="sales_person_target"/>
+                            <field name="sales_team_target"/>
                             <!-- <field name="start_date" required="1"/>
                             <field name="end_date" required="1"/> -->
                             <field name="sales_ord_trg_achived"/>
                             <field name="billed_inv_trg_achived"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Sales Orders" invisible="1">
+                            <field name="sale_team_order_ids" cols="4" colspan="4" nolable="1"/>
+                        </page>
+                        <page string="Sales Invoices" invisible="1">
+                            <field name="sale_invoice_ids" cols="4" colspan="4" nolable="1"/>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -35,14 +55,58 @@
         <field name="arch" type="xml">
             <tree string="Sales Order vs Billed Invoice Target">
                 <field name="team_id" required="1"/>
-                <field name="sales_person_target"/>
+                <field name="regions"/>
+                <field name="sales_team_target"/>
                 <field name="time_span"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
                 <field name="sales_ord_trg_achived"/>
                 <field name="billed_inv_trg_achived"/>
+                <field name="state"/>
             </tree>
         </field>
     </record>
 
+    <!-- Search View Of Sales Billed Invoice Target Team -->
+    <record id="view_sales_billed_invoice_target_team_search" model="ir.ui.view">
+        <field name="name">sales.billed.invoice.target.search.view</field>
+        <field name="model">sales.billed.invoice.target.team</field>
+        <field name="arch" type="xml">
+            <search string="Sales Order vs Billed Invoice Target">
+                <field name="team_id"/>
+                <field name="regions"/>
+                <field name="time_span"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <filter string="Current Month" name="current_month"
+                    domain="[('date_from','&lt;',(context_today()+relativedelta(months=1)).strftime('%%Y-%%m-01')), ('date_from','&gt;=',time.strftime('%%Y-%%m-01')),('date_to','&lt;',(context_today()+relativedelta(months=1)).strftime('%%Y-%%m-01')), ('date_to','&gt;=',time.strftime('%%Y-%%m-01'))]"/>
+                <separator/>
+                <filter string="Previous Month"
+                    name="previous_month"
+                    domain="[('date_from','&gt;=',(context_today()-relativedelta(months=1)).strftime('%%Y-%%m-01')),('date_from','&lt;',time.strftime('%%Y-%%m-01')),('date_to','&gt;=',(context_today()-relativedelta(months=1)).strftime('%%Y-%%m-01')),('date_to','&lt;',time.strftime('%%Y-%%m-01'))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Sales Team" name="team_id" context="{'group_by': 'team_id'}"/>
+                    <separator/>
+                    <filter string="Regions" name="regions" context="{'group_by': 'regions'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Pivot Of Sales Billed Invoice Target Team -->
+    <record id="view_sales_billed_invoice_target_team_pivot" model="ir.ui.view">
+         <field name="name">sales.billed.invoice.target.pivot.view</field>
+         <field name="model">sales.billed.invoice.target.team</field>
+         <field name="arch" type="xml">
+             <pivot string="Sales Order vs Billed Invoice Target">
+                <!-- disable_linking="True" -->
+                <field name="sales_ord_trg_achived" type="measure"/>
+                <field name="billed_inv_trg_achived" type="measure"/>
+                <field name="regions" type="row"/>
+                <field name="team_id" type="row"/>
+             </pivot>
+         </field>
+    </record>
 
     <!-- Action Of Sales Billed Invoice Target Team -->
     <record id="action_view_sales_billed_invoice_target_team"
@@ -50,7 +114,8 @@
         <field name="name">Sales Order vs Billed Invoice Team</field>
         <field name="res_model">sales.billed.invoice.target.team</field>
         <field name="view_type">form</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,form,pivot</field>
+        <!-- <field name="context">{'search_default_regions': 1, 'search_default_team_id': 1}</field> -->
     </record>
 
     <!-- Menu Item Of Sales Target -->
@@ -71,12 +136,24 @@
         <field name="model">sales.billed.invoice.target</field>
         <field name="arch" type="xml">
             <form string="Sales Order vs Billed Invoice Target">
+                <header>
+                    <button name="action_open_target" type="object" states="draft"
+                        string="In Progress" class="oe_highlight"/>
+                    <button name="action_set_to_draft_target" type="object" states="open"
+                        string="Set to Draft" class="oe_highlight"/>
+                    <button name="action_set_to_done" type="object" states="open"
+                        string="Done" class="oe_highlight"/>
+                    <button name="action_set_to_cancel" type="object" states="draft,open"
+                        string="Cancel" class="oe_highlight"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
                             <field name="team_id" required="1"/>
                             <field name="sales_user_id" required="1"
                                 domain="[('id', 'in', sales_user_ids)]"/>
+                            <field name="regions"/>
                             <field name="time_span" required="1"/>
                             <field name="date_from" required="1"/>
                             <field name="date_to" required="1"/>
@@ -93,6 +170,12 @@
                         <page string="Sales Persons" invisible="1">
                             <field name="sales_user_ids" nolable="1" col="4" colspan="4"/>
                         </page>
+                        <page string="Sales Orders" invisible="1">
+                            <field name="sale_person_order_ids" cols="4" colspan="4" nolable="1"/>
+                        </page>
+                        <page string="Sales Invoices" invisible="1">
+                            <field name="sale_invoice_ids" cols="4" colspan="4" nolable="1"/>
+                        </page>
                     </notebook>
                 </sheet>
             </form>
@@ -106,13 +189,61 @@
         <field name="arch" type="xml">
             <tree string="Sales Order vs Billed Invoice Target">
                 <field name="team_id" required="1"/>
+                <field name="regions"/>
                 <field name="sales_user_id" required="1"/>
                 <field name="sales_person_target"/>
                 <field name="time_span"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
                 <field name="sales_ord_trg_achived"/>
                 <field name="billed_inv_trg_achived"/>
+                <field name="state"/>
             </tree>
         </field>
+    </record>
+
+    <!-- Search View Of Sales Billed Invoice Target -->
+    <record id="view_sales_billed_invoice_target_search" model="ir.ui.view">
+        <field name="name">sales.billed.invoice.target.search.view</field>
+        <field name="model">sales.billed.invoice.target</field>
+        <field name="arch" type="xml">
+            <search string="Sales Order vs Billed Invoice Target">
+                <field name="team_id"/>
+                <field name="regions"/>
+                <field name="sales_user_id"/>
+                <field name="time_span"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <filter string="Current Month" name="current_month"
+                    domain="[('date_from','&lt;',(context_today()+relativedelta(months=1)).strftime('%%Y-%%m-01')), ('date_from','&gt;=',time.strftime('%%Y-%%m-01')),('date_to','&lt;',(context_today()+relativedelta(months=1)).strftime('%%Y-%%m-01')), ('date_to','&gt;=',time.strftime('%%Y-%%m-01'))]"/>
+                <separator/>
+                <filter string="Previous Month"
+                    name="previous_month"
+                    domain="[('date_from','&gt;=',(context_today()-relativedelta(months=1)).strftime('%%Y-%%m-01')),('date_from','&lt;',time.strftime('%%Y-%%m-01')),('date_to','&gt;=',(context_today()-relativedelta(months=1)).strftime('%%Y-%%m-01')),('date_to','&lt;',time.strftime('%%Y-%%m-01'))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Sales Team" name="team_id" context="{'group_by': 'team_id'}"/>
+                    <separator/>
+                    <filter string="Regions" name="regions" context="{'group_by': 'regions'}"/>
+                    <separator/>
+                    <filter string="Sales Person" name="sales_user_id" context="{'group_by': 'sales_user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Pivot Of Sales Billed Invoice Target-->
+    <record id="view_sales_billed_invoice_target_pivot" model="ir.ui.view">
+         <field name="name">sales.billed.invoice.target.pivot.view</field>
+         <field name="model">sales.billed.invoice.target</field>
+         <field name="arch" type="xml">
+             <pivot string="Sales Order vs Billed Invoice Target">
+                <!-- disable_linking="True" -->
+                <field name="sales_ord_trg_achived" type="measure"/>
+                <field name="billed_inv_trg_achived" type="measure"/>
+                <field name="regions" type="row"/>
+                <field name="sales_user_id" type="row"/>
+             </pivot>
+         </field>
     </record>
 
     <!-- Action Of Sales Billed Invoice Target -->
@@ -121,7 +252,8 @@
         <field name="name">Sales Order vs Billed Invoice Person</field>
         <field name="res_model">sales.billed.invoice.target</field>
         <field name="view_type">form</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,form,pivot</field>
+        <!-- <field name="context">{'search_default_regions': 1, 'search_default_sales_user_id': 1}</field> -->
     </record>
 
     <!-- MenuItem Of Sales Billed Invoice Target -->
