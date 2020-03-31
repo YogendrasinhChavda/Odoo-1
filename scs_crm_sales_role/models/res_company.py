@@ -9,6 +9,13 @@ class ResCompany(models.Model):
     _inherit = "res.company"
 
     @api.multi
+    def remove_date_end_from_pricelistitem(self):
+        """Method to remove date end from price list item."""
+        self.env.cr.execute("update product_pricelist_item set \
+            date_end=null")
+        print("\n DONE ::::Product Pricelist item UPDATE:::")
+
+    @api.multi
     def update_sales_team_in_quote_sales_order(self):
         """Method to set sales team in Quotation/Sale Orders."""
         sale_obj = self.env['sale.order']

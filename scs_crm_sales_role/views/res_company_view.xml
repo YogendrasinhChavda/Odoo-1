@@ -8,24 +8,32 @@
             <field name="inherit_id" ref="base.view_company_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//notebook" position="inside">
-                    <page string="Script Buttons" invisible="1">
+                    <page string="Script Buttons">
                         <separator name="Don't Click on this button if you are not aware."/>
+                        <button name="remove_date_end_from_pricelistitem"
+                            string="Update Product Pricelist Item"
+                            type="object"
+                            class="oe_highlight"/>
                         <button name="update_sales_team_in_quote_sales_order"
                             string="Update Sales Team In Sales Order"
                             type="object"
-                            class="oe_highlight"/>
+                            class="oe_highlight"
+                            invisible="1"/>
                         <button name="update_sales_team_in_account_invoice"
                             string="Update Sales Team In Sales Invoices"
                             type="object"
-                            class="oe_highlight"/>
+                            class="oe_highlight"
+                            invisible="1"/>
                         <button name="update_sales_person_in_invoice_lines"
                             string="Update Sales Person In Invoice Lines"
                             type="object"
-                            class="oe_highlight"/>
+                            class="oe_highlight"
+                            invisible="1"/>
 <!--                         <button name="update_taxes_tags"
                             string="Update Taxes Tags For Ccleen Company"
                             type="object"
-                            class="oe_highlight"/> -->
+                            class="oe_highlight"
+                            invisible="1"/> -->
                     </page>
                 </xpath>
             </field>
