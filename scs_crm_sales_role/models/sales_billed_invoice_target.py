@@ -94,7 +94,6 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     ('team_id', '=', team_id),
                     ('state', 'in', ['sale', 'done'])])
                 sale_team_trg.sale_team_order_ids = [(6, 0, sales.ids)]
-                print("\n sales :::::::::::::::", sales)
                 sale_team_trg.sales_ord_trg_achived = \
                     sum([sale.amount_total for sale in sales]) or 0.0
 

@@ -8,6 +8,10 @@ class AccountInvoiceLine(models.Model):
 
     _inherit = "account.invoice.line"
 
+    partner_parent_id = fields.Many2one(related="partner_id.parent_id",
+                                        string="Customer Parent Name",
+                                        store=True)
+
     # Moved Below fields here from studio custom
     x_studio_partner_salesperson = \
         fields.Many2one(related="partner_id.user_id",
