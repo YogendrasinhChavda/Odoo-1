@@ -180,9 +180,13 @@
                 <filter string="Previous Month"
                     name="previous_month"
                     domain="[('x_studio_invoice_date','&gt;=',(context_today()-relativedelta(months=1)).strftime('%%Y-%%m-01')),('x_studio_invoice_date','&lt;',time.strftime('%%Y-%%m-01'))]"/>
+                <separator/>
+                <filter string="Current Fiscal Year"
+                    name="current_fiscal_year"
+                    domain="[('x_studio_invoice_date','&gt;=',(datetime.datetime.now().replace(day=1,month=7) - relativedelta(years=1)).strftime('%%Y-%%m-%%d')),('x_studio_invoice_date','&lt;=',(datetime.datetime.now().replace(day=30,month=6)).strftime('%%Y-%%m-%%d'))]"/>
                 <group expand="1" string="Group By">
                     <filter string="Customer" name='customer' context="{'group_by':'partner_id'}"/>
-                    <filter string="Salesperson" name='user' context="{'group_by':'x_studio_partner_salesperson'}"/>
+                    <filter string="Salesperson" name='user' context="{'group_by':'x_studio_sales_person'}"/>
                     <filter string="Status" name="status"
                         context="{'group_by':'x_studio_invoice_reference_status'}"/>
                     <filter string="Company" name="company" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
