@@ -54,5 +54,6 @@ class CrmLead(models.Model):
 
     _inherit = "crm.lead"
 
-    cust_state_id = fields.Many2one("res.country.state",
-                                    string='Customer State')
+    # cust_state_id = fields.Many2one(related="partner_id.state_id",
+    #                                 store=True,
+    #                                 string='Customer State')

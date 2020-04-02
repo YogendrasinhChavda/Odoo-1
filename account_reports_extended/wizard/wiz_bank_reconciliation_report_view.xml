@@ -1,4 +1,15 @@
 <odoo>
+    <!-- Added tree view of account bank statement to show the date only in tree -->
+    <record id="account_bank_st_view_tree" model="ir.ui.view">
+        <field name="name">account.bank.st.view.tree</field>
+        <field name="model">account.bank.statement</field>
+        <field name="arch" type="xml">
+            <tree string="Bank Statement Dates">
+                <field name="date" required="1"/>
+                <field name="state" invisible="1"/>
+            </tree>
+        </field>
+    </record>
 
     <record id="wiz_bank_reconcil_rep_exported_form" model="ir.ui.view">
         <field name="name">wiz.bank.reconciliation.report.exported.form</field>
@@ -26,8 +37,14 @@
             <form string="Bank Reconciliation Report">
                 <group>
                     <field name="company_id" required="1"/>
-                    <field name="date_from" required="1"/>
-                    <field name="date_to" required="1"/>
+                    <field name="bnk_st_date" required="1"
+                        domain="[('company_id', '=', company_id)]"
+                        context="{'bank_st_as_date': True, 'tree_view_ref': 'account_reports_extended.account_bank_st_view_tree'}"
+                        options="{'no_create': True, 'no_open': True}"/>
+                      <!--   widget="selection" -->
+
+                    <!-- <field name="date_from" required="1"/>
+                    <field name="date_to" required="1"/> -->
                 </group>
                 <notebook>
                     <page string="Bank Accounts / Journals">
