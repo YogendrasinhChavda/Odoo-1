@@ -20,40 +20,58 @@ class ResCompany(models.Model):
         sale_obj = self.env['sale.order']
         sales_ords = sale_obj.search([('partner_id', '!=', False)])
         for sale_ord in sales_ords:
-            if sale_ord.partner_id and sale_ord.partner_id.team_id:
-                sale_ord.write({
-                    'team_id': sale_ord.partner_id.team_id.id or False
-                })
+            if sale_ord.partner_id:
+                if sale_ord.partner_id.team_id:
+                    sale_ord.write({
+                        'team_id': sale_ord.partner_id.team_id.id or False
+                    })
+                elif sale_ord.partner_id.parent_id and \
+                        sale_ord.partner_id.parent_id.team_id:
+                    sale_ord.write({
+                        'team_id':
+                        sale_ord.partner_id.parent_id.team_id.id or False
+                    })
 
     @api.multi
     def update_sales_team_in_account_invoice(self):
-        """Method to set sales team in Quotation/Sale Orders."""
-        sale_obj = self.env['sale.order']
-        sales_invoices = sale_obj.search([
+        """Method to set sales team in Sales Invoices."""
+        invoice_obj = self.env['account.invoice']
+        sales_invoices = invoice_obj.search([
             ('partner_id', '!=', False),
             ('type', 'in', ['out_invoice', 'out_refund'])])
         for sale_inv in sales_invoices:
-            if sale_inv.partner_id and sale_inv.partner_id.team_id:
-                sale_inv.write({
-                    'team_id': sale_inv.partner_id.team_id.id or False
-                })
+            if sale_inv.partner_id:
+                if sale_inv.partner_id.team_id:
+                    sale_inv.write({
+                        'team_id': sale_inv.partner_id.team_id.id or False
+                    })
+                elif sale_inv.partner_id.parent_id and \
+                        sale_inv.partner_id.parent_id.team_id:
+                    sale_inv.write({
+                        'team_id':
+                        sale_inv.partner_id.parent_id.team_id.id or False
+                    })
 
     @api.multi
-    def update_sales_person_in_invoice_lines(self):
-        """Method to update sales person reference in invoice lines."""
+    def update_sales_person_in_account_invoice(self):
+        """Method to update sales person reference in account invoice."""
         """Due to the studio fields that reference is missing need to fix."""
         invoice_obj = self.env['account.invoice']
         cust_invs = invoice_obj.search([
             ('user_id', '=', False),
             ('type', 'in', ['out_invoice', 'out_refund'])])
         for cust_inv in cust_invs:
-            sales_person = cust_inv.partner_id and \
-                cust_inv.partner_id.user_id and \
-                cust_inv.partner_id.user_id.id or False
-            if sales_person:
-                cust_inv.write({
-                    'user_id': sales_person
-                })
+            if cust_inv.partner_id:
+                if cust_inv.partner_id.user_id:
+                    cust_inv.write({
+                        'user_id': cust_inv.partner_id.user_id.id or False
+                    })
+                elif cust_inv.partner_id.parent_id and \
+                        cust_inv.partner_id.parent_id.user_id:
+                    cust_inv.write({
+                        'user_id':
+                        cust_inv.partner_id.parent_id.user_id.id or False
+                    })
 
     # @api.multi
     # def update_taxes_tags(self):
