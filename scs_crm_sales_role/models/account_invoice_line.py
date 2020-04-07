@@ -13,9 +13,9 @@ class AccountInvoiceLine(models.Model):
                                         store=True)
 
     # Moved Below fields here from studio custom
-    x_studio_partner_salesperson = \
-        fields.Many2one(related="partner_id.user_id",
-                        string="Partner Salesperson", store=True)
+    x_studio_partner_salesperson = fields.Many2one(
+        related="invoice_id.partner_id.user_id",
+        string="Partner Salesperson", store=True)
 
     x_studio_sales_person = \
         fields.Many2one(
@@ -29,10 +29,12 @@ class AccountInvoiceLine(models.Model):
         related="invoice_id.state",
         string="Invoice Reference Status", store=True)
     x_studio_state = fields.Many2one(
-        related="sale_line_ids.order_id.partner_id.state_id",
+        # related="sale_line_ids.order_id.partner_id.state_id",
+        related="invoice_id.partner_id.state_id",
         store=True,
         string="State")
     x_studio_country = fields.Many2one(
-        related="sale_line_ids.order_id.partner_id.country_id",
+        # related="sale_line_ids.order_id.partner_id.country_id",
+        related="invoice_id.partner_id.country_id",
         store=True,
         string="Country")
