@@ -109,6 +109,63 @@ class ResCompany(models.Model):
                 'x_studio_sales_person': inv_line.invoice_id.user_id.id
             })
 
+    @api.multi
+    def update_partner_sales_person_in_account_invoice_lines(self):
+        """To update partner sales person for account invoice lines."""
+        """Due to the studio fields that reference is missing need to fix."""
+        inv_line_obj = self.env['account.invoice.line']
+        inv_lines = inv_line_obj.search([
+            ('x_studio_partner_salesperson', '=', False),
+            ('invoice_id', '!=', False),
+            ('invoice_id.partner_id', '!=', False)])
+        for inv_line in inv_lines:
+            if inv_line.invoice_id.partner_id.user_id:
+                inv_line.write({
+                    'x_studio_partner_salesperson':
+                    inv_line.invoice_id.partner_id.user_id.id
+                })
+            if not inv_line.invoice_id.partner_id.user_id and \
+                inv_line.invoice_id.partner_id.parent_id and \
+                    inv_line.invoice_id.partner_id.parent_id.user_id:
+                inv_line.write({
+                    'x_studio_partner_salesperson':
+                    inv_line.invoice_id.partner_id.parent_id.user_id.id
+                })
+
+    @api.multi
+    def update_state_id_in_account_invoice_lines(self):
+        """Method to update state reference in account invoice lines."""
+        """Due to the studio fields that reference is missing need to fix."""
+        inv_line_obj = self.env['account.invoice.line']
+        inv_lines = inv_line_obj.search([
+            ('x_studio_state', '=', False),
+            ('invoice_id', '!=', False),
+            ('invoice_id.partner_id', '!=', False)])
+        for inv_line in inv_lines:
+            if inv_line.invoice_id.partner_id and \
+                    inv_line.invoice_id.partner_id.state_id:
+                inv_line.write({
+                    'x_studio_state':
+                    inv_line.invoice_id.partner_id.state_id.id
+                })
+
+    @api.multi
+    def update_country_id_in_account_invoice_lines(self):
+        """Method to update country reference in account invoice lines."""
+        """Due to the studio fields that reference is missing need to fix."""
+        inv_line_obj = self.env['account.invoice.line']
+        inv_lines = inv_line_obj.search([
+            ('x_studio_country', '=', False),
+            ('invoice_id', '!=', False),
+            ('invoice_id.partner_id', '!=', False)])
+        for inv_line in inv_lines:
+            if inv_line.invoice_id.partner_id and \
+                    inv_line.invoice_id.partner_id.country_id:
+                inv_line.write({
+                    'x_studio_country':
+                    inv_line.invoice_id.partner_id.country_id.id
+                })
+
     # @api.multi
     # def update_taxes_tags(self):
     #     """Method to update taxes tags to print Tax report."""

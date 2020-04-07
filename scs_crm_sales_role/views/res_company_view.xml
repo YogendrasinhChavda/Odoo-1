@@ -16,7 +16,6 @@
                             class="oe_highlight"
                             invisible ="1"/><br/>
                         <separator/>
-                        
                         <button name="update_sales_team_in_quote_sales_order"
                             string="Update Sales Team In Quotations/Sales Order"
                             type="object"
@@ -54,6 +53,30 @@
                             invisible="0"
                             help="This button will take sales Person from sales invoices to update in all Sales Invoices lines."/><br/>
                         <separator/>
+
+                        <button name="update_partner_sales_person_in_account_invoice_lines"
+                            string="Update Partner Sales Person In Invoices Lines"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="0"
+                            help="This button will take sales Person from Customer form view and to update in all Sales Invoices lines."/><br/>
+                        <separator/>
+
+                        <button name="update_state_id_in_account_invoice_lines"
+                            string="Update State Info. from Customer To In Invoices Lines"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="0"
+                            help="This button will take State Information from Customer form and to update in all Sales Invoices lines."/><br/>
+                        <separator/>
+                        <button name="update_country_id_in_account_invoice_lines"
+                            string="Update Country Info. from Customer To In Invoices Lines"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="0"
+                            help="This button will take Country Information from Customer form to update in all Sales Invoices lines."/><br/>
+                        <separator/>
+
 <!--                         <button name="update_taxes_tags"
                             string="Update Taxes Tags For Ccleen Company"
                             type="object"

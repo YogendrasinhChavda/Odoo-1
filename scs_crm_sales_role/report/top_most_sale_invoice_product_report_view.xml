@@ -187,7 +187,7 @@
 
                 <group expand="1" string="Group By">
                     <filter string="Customer" name='customer' context="{'group_by':'partner_id'}"/>
-                    <filter string="Salesperson" name='user' context="{'group_by':'x_studio_sales_person'}"/>
+                    <filter string="Salesperson" name='user' context="{'group_by':'x_studio_partner_salesperson'}"/>
                     <filter string="Status" name="status"
                         context="{'group_by':'x_studio_invoice_reference_status'}"/>
                     <filter string="Company" name="company" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
