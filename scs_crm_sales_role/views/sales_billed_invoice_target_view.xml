@@ -150,10 +150,10 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="team_id" required="1"/>
-                            <field name="sales_user_id" required="1"
-                                domain="[('id', 'in', sales_user_ids)]"/>
-                            <field name="regions"/>
+                            <!-- <field name="team_id" required="1"/> -->
+                            <field name="sales_user_id" required="1"/>
+                               <!--  domain="[('id', 'in', sales_user_ids)]"/> -->
+                           <!--  <field name="regions"/> -->
                             <field name="time_span" required="1"/>
                             <field name="date_from" required="1"/>
                             <field name="date_to" required="1"/>
@@ -167,9 +167,9 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Sales Persons" invisible="1">
+                     <!--    <page string="Sales Persons" invisible="1">
                             <field name="sales_user_ids" nolable="1" col="4" colspan="4"/>
-                        </page>
+                        </page> -->
                         <page string="Sales Orders" invisible="1">
                             <field name="sale_person_order_ids" cols="4" colspan="4" nolable="1"/>
                         </page>
@@ -188,8 +188,8 @@
         <field name="model">sales.billed.invoice.target</field>
         <field name="arch" type="xml">
             <tree string="Sales Order vs Billed Invoice Target">
-                <field name="team_id" required="1"/>
-                <field name="regions"/>
+               <!--  <field name="team_id" required="1"/>
+                <field name="regions"/> -->
                 <field name="sales_user_id" required="1"/>
                 <field name="sales_person_target"/>
                 <field name="time_span"/>
@@ -208,8 +208,8 @@
         <field name="model">sales.billed.invoice.target</field>
         <field name="arch" type="xml">
             <search string="Sales Order vs Billed Invoice Target">
-                <field name="team_id"/>
-                <field name="regions"/>
+                <!-- <field name="team_id"/>
+                <field name="regions"/> -->
                 <field name="sales_user_id"/>
                 <field name="time_span"/>
                 <field name="date_from"/>
@@ -221,10 +221,10 @@
                     name="previous_month"
                     domain="[('date_from','&gt;=',(context_today()-relativedelta(months=1)).strftime('%%Y-%%m-01')),('date_from','&lt;',time.strftime('%%Y-%%m-01')),('date_to','&gt;=',(context_today()-relativedelta(months=1)).strftime('%%Y-%%m-01')),('date_to','&lt;',time.strftime('%%Y-%%m-01'))]"/>
                 <group expand="0" string="Group By">
-                    <filter string="Sales Team" name="team_id" context="{'group_by': 'team_id'}"/>
+                   <!--  <filter string="Sales Team" name="team_id" context="{'group_by': 'team_id'}"/>
                     <separator/>
                     <filter string="Regions" name="regions" context="{'group_by': 'regions'}"/>
-                    <separator/>
+                    <separator/> -->
                     <filter string="Sales Person" name="sales_user_id" context="{'group_by': 'sales_user_id'}"/>
                 </group>
             </search>
@@ -240,7 +240,7 @@
                 <!-- disable_linking="True" -->
                 <field name="sales_ord_trg_achived" type="measure"/>
                 <field name="billed_inv_trg_achived" type="measure"/>
-                <field name="regions" type="row"/>
+                <!-- <field name="regions" type="row"/> -->
                 <field name="sales_user_id" type="row"/>
              </pivot>
          </field>

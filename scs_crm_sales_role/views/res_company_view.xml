@@ -32,11 +32,27 @@
                             help="This button will take sales team from customer form (Sales Team configured in customer form) and update in all Sales Invoices."/><br/>
                         <separator/>
 
-                        <button name="update_sales_person_in_invoice_lines"
-                            string="Update Sales Person In Invoices"
+                        <button name="update_sales_person_in_quote_sales_order"
+                            string="Update Sales Person In Quotations/Sales Order"
                             type="object"
                             class="oe_highlight"
-                            invisible="1"/><br/>
+                            invisible="0"
+                            help="This button will take sales Person from customer form (Sales Person configured in customer form) and update in all Quotations and Sales orders."/><br/>
+                        <separator/>
+                        <button name="update_sales_person_in_account_invoice"
+                            string="Update Sales Person In Sales Invoices"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="0"
+                            help="This button will take sales Person from customer form (Sales Person configured in customer form) and update in all Sales Invoices."/><br/>
+                        <separator/>
+
+                        <button name="update_sales_person_in_account_invoice_lines"
+                            string="Update Sales Person In Invoices Lines"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="0"
+                            help="This button will take sales Person from sales invoices to update in all Sales Invoices lines."/><br/>
                         <separator/>
 <!--                         <button name="update_taxes_tags"
                             string="Update Taxes Tags For Ccleen Company"

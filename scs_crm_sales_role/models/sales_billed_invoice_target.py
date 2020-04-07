@@ -74,7 +74,29 @@ class SalesBilledInvoiceTargetTeam(models.Model):
             team_trg.state = 'cancel'
 
     @api.multi
-    @api.depends('team_id', 'team_id.sale_team_orders_ids',
+    def _get_all_teams(self, team_id=False):
+        """Method to get all the sales teams."""
+        self.ensure_one()
+        crm_team_obj = self.env['crm.team']
+        team_ids = []
+        if team_id:
+            team_ids = \
+                crm_team_obj.search([('id', 'child_of', team_id.id)]).ids
+        return team_ids
+
+    @api.multi
+    @api.depends('team_id',
+                 'team_id.states_team_ids',
+                 'team_id.states_team_ids.sale_team_orders_ids.team_id',
+                 'team_id.states_team_ids.sale_team_invoice_ids.team_id',
+                 'team_id.states_team_ids.sale_team_orders_ids.state',
+                 'team_id.states_team_ids.sale_team_invoice_ids.state',
+                 'team_id.region_team_ids',
+                 'team_id.region_team_ids.sale_team_orders_ids.team_id',
+                 'team_id.region_team_ids.sale_team_invoice_ids.team_id',
+                 'team_id.region_team_ids.sale_team_orders_ids.state',
+                 'team_id.region_team_ids.sale_team_invoice_ids.state',
+                 'team_id.sale_team_orders_ids',
                  'team_id.sale_team_orders_ids.state',
                  'team_id.sale_team_invoice_ids',
                  'team_id.sale_team_invoice_ids.state',
@@ -85,13 +107,16 @@ class SalesBilledInvoiceTargetTeam(models.Model):
         for sale_team_trg in self:
             sale_team_trg.sale_team_order_ids = [(6, 0, [])]
             sale_team_trg.sale_invoice_ids = [(6, 0, [])]
-            team_id = sale_team_trg.team_id and \
-                sale_team_trg.team_id.id or False
-            if team_id:
+            team_ids = []
+            if sale_team_trg.team_id:
+                team_ids = sale_team_trg._get_all_teams(sale_team_trg.team_id)
+            # team_id = sale_team_trg.team_id and \
+            #     sale_team_trg.team_id.id or False
+            if team_ids:
                 sales = sale_obj.search([
                     ('confirmation_date', '>=', sale_team_trg.date_from),
                     ('confirmation_date', '<=', sale_team_trg.date_to),
-                    ('team_id', '=', team_id),
+                    ('team_id', 'in', team_ids),
                     ('state', 'in', ['sale', 'done'])])
                 sale_team_trg.sale_team_order_ids = [(6, 0, sales.ids)]
                 sale_team_trg.sales_ord_trg_achived = \
@@ -101,7 +126,7 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     ('date_invoice', '>=', sale_team_trg.date_from),
                     ('date_invoice', '<=', sale_team_trg.date_to),
                     ('type', '=', 'out_invoice'),
-                    ('team_id', '=', team_id),
+                    ('team_id', 'in', team_ids),
                     ('state', 'in', ['open', 'in_payment', 'paid'])])
                 sale_team_trg.sale_invoice_ids = [(6, 0, invoices.ids)]
                 sale_team_trg.billed_inv_trg_achived = \
@@ -172,10 +197,10 @@ class SalesBilledInvoiceTarget(models.Model):
     _rec_name = 'sales_user_id'
 
     sales_user_id = fields.Many2one("res.users", string="Sales Person")
-    sales_user_ids = fields.Many2many("res.users",
-                                      "sales_bill_user_target_rel",
-                                      "sale_target_id", "sal_user_id",
-                                      string="Sales Persons")
+    # sales_user_ids = fields.Many2many("res.users",
+    #                                   "sales_bill_user_target_rel",
+    #                                   "sale_target_id", "sal_user_id",
+    #                                   string="Sales Persons")
     sales_person_target = fields.Float(string="Sales Person Target")
     time_span = fields.Selection([('monthly', 'Monthly'),
                                   ('quarterly', 'Quarterly'),
@@ -184,10 +209,10 @@ class SalesBilledInvoiceTarget(models.Model):
                                  default="monthly")
     date_from = fields.Date(string="Start Date")
     date_to = fields.Date(string="End Date")
-    team_id = fields.Many2one("crm.team", string="Team")
-    regions = fields.Selection(related="team_id.regions",
-                               string="Regions",
-                               store=True)
+    # team_id = fields.Many2one("crm.team", string="Team")
+    # regions = fields.Selection(related="team_id.regions",
+    #                            string="Regions",
+    #                            store=True)
     sales_ord_trg_achived = fields.Float(
         compute="_get_sales_persons_orders_and_invoice_info",
         store=True,
@@ -265,7 +290,7 @@ class SalesBilledInvoiceTarget(models.Model):
             self.date_to = e_date
 
     @api.multi
-    @api.depends('team_id', 'sales_user_id',
+    @api.depends('sales_user_id',
                  'sales_user_id.sale_person_orders_ids',
                  'sales_user_id.sale_person_orders_ids.state',
                  'sales_user_id.sale_person_orders_ids.user_id',
@@ -281,14 +306,14 @@ class SalesBilledInvoiceTarget(models.Model):
             sale_person_trg.sale_invoice_ids = [(6, 0, [])]
             sale_person = sale_person_trg.sales_user_id and \
                 sale_person_trg.sales_user_id.id or False
-            team_id = sale_person_trg.team_id and \
-                sale_person_trg.team_id.id or False
-            if team_id:
+            # team_id = sale_person_trg.team_id and \
+            #     sale_person_trg.team_id.id or False
+            if sale_person:
                 sales = sale_obj.search([
                     ('confirmation_date', '>=', sale_person_trg.date_from),
                     ('confirmation_date', '<=', sale_person_trg.date_to),
                     ('user_id', '=', sale_person),
-                    ('team_id', '=', team_id),
+                    # ('team_id', '=', team_id),
                     ('state', 'in', ['sale', 'done'])])
                 sale_person_trg.sale_person_order_ids = [(6, 0, sales.ids)]
                 sale_person_trg.sales_ord_trg_achived = \
@@ -299,7 +324,7 @@ class SalesBilledInvoiceTarget(models.Model):
                     ('date_invoice', '<=', sale_person_trg.date_to),
                     ('type', '=', 'out_invoice'),
                     ('user_id', '=', sale_person),
-                    ('team_id', '=', team_id),
+                    # ('team_id', '=', team_id),
                     ('state', 'in', ['open', 'in_payment', 'paid'])])
                 sale_person_trg.sale_invoice_ids = [(6, 0, invoices.ids)]
                 sale_person_trg.billed_inv_trg_achived = \
@@ -342,19 +367,19 @@ class SalesBilledInvoiceTarget(models.Model):
     #     elif self.time_span == 'quarterly':
     #     elif self.time_span == 'yearly':
 
-    @api.onchange('team_id')
-    def onchange_sales_user_id(self):
-        """Onchange Method to filter sales person."""
-        sales_persons = self.env['res.users'].search([
-            ('active', '=', True)]).ids
-        sales_persons_lst = []
-        self.sales_user_id = False
-        if self.team_id:
-            if self.team_id.user_id:
-                sales_persons_lst.append(self.team_id.user_id.id)
-            if self.team_id.member_ids:
-                sales_persons_lst.extend(self.team_id.member_ids.ids)
-            if sales_persons_lst:
-                sales_persons = list(set(sales_persons_lst))
-        if sales_persons:
-            self.sales_user_ids = [(6, 0, sales_persons)]
+    # @api.onchange('team_id')
+    # def onchange_sales_user_id(self):
+    #     """Onchange Method to filter sales person."""
+    #     sales_persons = self.env['res.users'].search([
+    #         ('active', '=', True)]).ids
+    #     sales_persons_lst = []
+    #     self.sales_user_id = False
+    #     if self.team_id:
+    #         if self.team_id.user_id:
+    #             sales_persons_lst.append(self.team_id.user_id.id)
+    #         if self.team_id.member_ids:
+    #             sales_persons_lst.extend(self.team_id.member_ids.ids)
+    #         if sales_persons_lst:
+    #             sales_persons = list(set(sales_persons_lst))
+    #     if sales_persons:
+    #         self.sales_user_ids = [(6, 0, sales_persons)]
