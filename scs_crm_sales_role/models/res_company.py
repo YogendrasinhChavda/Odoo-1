@@ -39,7 +39,7 @@ class ResCompany(models.Model):
         invoice_obj = self.env['account.invoice']
         sales_invoices = invoice_obj.search([
             ('partner_id', '!=', False),
-            ('team_id', '=', False)
+            ('team_id', '=', False),
             ('type', 'in', ['out_invoice', 'out_refund'])])
         for sale_inv in sales_invoices:
             if sale_inv.partner_id:
