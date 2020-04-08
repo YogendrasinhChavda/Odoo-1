@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="report_invoice_document_with_payments_inherit"
+            inherit_id="account.report_invoice_document_with_payments">
+            <xpath expr="/t/t/div/h2/span[1]" position="replace">
+                <span t-if="o.type == 'out_invoice' and o.state in ('open', 'in_payment', 'paid')">Tax Invoice</span>
+            </xpath>
+            <xpath expr="/t/t/div/table/thead/tr/th[1]" position="before">
+                <th>
+                    <span>Internal Reference</span>
+                </th>
+            </xpath>
+            <xpath expr="/t/t/div/table/tbody/t[2]/tr/t[1]/td[1]" position="before">
+                <td>
+                    <span t-field="line.product_id.default_code"/>
+                </td>
+            </xpath>
+            <xpath expr="/t/t/div/table/thead/tr/th[1]/span" position="replace">
+                <span>Part ID</span>
+            </xpath>
+            <xpath expr="/t[1]/t[1]/div[1]/table[1]/tbody[1]/t[2]/tr[1]/t[1]/td[4]/span[1]" position="attributes">
+                <attribute name="t-options-widget">"image"</attribute>
+            </xpath>
+            <xpath expr="/t[1]/t[1]/div[1]/table[1]/tbody[1]/t[2]/tr[1]/t[1]/td[4]/span[1]" position="attributes">
+                <attribute name="t-options-widget">"integer"</attribute>
+            </xpath>
+            <xpath expr="/t/t/div/p[3]" position="after">
+                <div class="row">
+                    <div class="col">
+                        <span>New Text Block</span>
+                    </div>
+                </div>
+            </xpath>
+<!--             <xpath expr="/t/t/div/div[3]/div/span" position="replace">
+                <span>Please make payment to:</span>
+            </xpath>
+            <xpath expr="/t/t/div/div[3]/div/span" position="replace">
+                <span>
+                    <p>Please make payment to:<br/></p>
+                    <p>
+                        <b>Direct Debit Detail</b><br/>
+                    </p>
+                </span>
+            </xpath> -->
+<!--             <xpath expr="/t/t/div/div[3]/div/span" position="replace">
+                <span>
+                    <p>Please make payment with following detail:<br/></p>
+                    <p>
+                        <b>Direct Debit Detail</b><br/>
+                    </p>
+                </span>
+            </xpath>
+            <xpath expr="/t/t/div/div[3]/div/span" position="replace">
+                <span>
+                    <p>Please make payment with following detail:<br/></p>
+                    <p>
+                        <b>Direct Debit Detail</b>
+                    </p>
+                    <p>
+                        <b>Gentec Australia Pty Ltd</b><br/><br/>
+                    </p>
+                </span>
+            </xpath>
+            <xpath expr="/t/t/div/div[3]/div/span" position="replace">
+                <span>
+                    <p>Please make payment with following detail:<br/></p>
+                    <p>
+                        <b>Direct Debit Detail</b>
+                    </p>
+                    <p><b>Gentec Australia Pty Ltd</b><br/>Bank: Westpac Banking Corporation<br/></p>
+                </span>
+            </xpath>
+            <xpath expr="/t/t/div/div[3]/div/span" position="replace">
+                <span>
+                    <p>Please make payment with following detail:<br/></p>
+                    <p>
+                        <b>Direct Debit Detail</b>
+                    </p>
+                    <p>Bank: Westpac Banking Corporation</p>
+                    <p>BSB:032090  Account No: 160492<br/></p>
+                </span>
+            </xpath> -->
+
+            <xpath expr="/t/t/div/div[3]/div/span" position="replace">
+                <t t-set="bank_vals" t-value="o.get_invoice_bill_bank_details()"/>
+                <span>
+                    <p>Please make payment with:<br/></p>
+                    <p>
+                        <b>Direct Debit Detail</b>
+                    </p>
+                    <p>Bank: <span t-esc="bank_vals['bank_name']"/></p>
+                    <p>BSB: <span t-esc="bank_vals['bsb']"/>  Account No: <span t-esc="bank_vals['acc_number']"/></p>
+                    <p>Swift Code: WPACAU2S<br/></p>
+                </span>
+            </xpath>
+            <xpath expr="/t[1]/t[1]/div[1]/p[2]" position="replace"/>
+            <xpath expr="/t/t/div/div[1]/div[1]/strong" position="replace">
+                <strong>Your Reference</strong>
+            </xpath>
+            <xpath expr="/t/t/div/h2" position="before">
+                <div class="row">
+                    <div class="col">
+                        <span>New Text Block</span>
+                    </div>
+                </div>
+            </xpath>
+            <xpath expr="/t/t/div/div[4]/div/span/p[1]" position="replace">
+                <p>Please make payment with following information:<br/></p>
+            </xpath>
+            <xpath expr="/t/t/div/div[1]/div/span" position="replace">
+                <span> </span>
+            </xpath>
+            <xpath expr="/t[1]/t[1]/div[1]/div[4]/div[1]/span[1]/p[1]" position="replace"/>
+            <xpath expr="/t/t/div/div[2]/div[4]/strong" position="replace">
+                <strong>Sale Order</strong>
+            </xpath>
+         <!--    <xpath expr="/t[1]/t[1]/div[1]/div[2]/div[5]/strong[1]" position="replace"/>
+            <xpath expr="/t[1]/t[1]/div[1]/div[2]/div[5]" position="replace"/> -->
+            <xpath expr="/t[1]/t[1]/div[1]/div[2]/div[2]/p[1]" position="attributes">
+                <attribute name="t-options-widget">"date"</attribute>
+            </xpath>
+            <xpath expr="/t[1]/t[1]/div[1]/div[2]/div[2]/p[1]" position="attributes">
+                <attribute name="t-options-format">"dd/MM/yyyy"</attribute>
+            </xpath>
+<!--             <xpath expr="/t[1]/t[1]/div[1]/div[2]/div[3]/strong[1]" position="attributes">
+                <attribute name="t-if">docs.date_due == "2019-01-01"</attribute>
+            </xpath>
+            <xpath expr="/t[1]/t[1]/div[1]/div[2]/div[3]/p[1]" position="attributes">
+                <attribute name="t-if">docs.date_invoice == "2019-01-01"</attribute>
+            </xpath> -->
+        </template>
+    </data>
+</odoo>
