@@ -37,21 +37,24 @@
             <form string="Bank Reconciliation Report">
                 <group>
                     <field name="company_id" required="1"/>
+                    <field name="journal_id" required="1" staring="Bank Account / Journal"
+                        domain="[('type', '=', 'bank'),('company_id', '=', company_id)]"/>
                     <field name="bnk_st_date" required="1"
-                        domain="[('company_id', '=', company_id)]"
+                        domain="[('company_id', '=', company_id),('journal_id', '=', journal_id)]"
                         context="{'bank_st_as_date': True, 'tree_view_ref': 'account_reports_extended.account_bank_st_view_tree'}"
                         options="{'no_create': True, 'no_open': True}"/>
+                        <!--   -->
                       <!--   widget="selection" -->
 
                     <!-- <field name="date_from" required="1"/>
                     <field name="date_to" required="1"/> -->
                 </group>
-                <notebook>
+<!--                 <notebook>
                     <page string="Bank Accounts / Journals">
                         <field name="journal_ids" nolable="1" col="4" colspan="4"
                             domain="[('type', '=', 'bank'),('company_id', '=', company_id)]"/>
                     </page>
-                </notebook>
+                </notebook> -->
                 <footer>
                     <button name="export_bank_reconciliation_report" class="btn btn-primary"
                         string="Export File" type="object"/>
