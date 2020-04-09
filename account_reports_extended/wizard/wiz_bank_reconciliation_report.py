@@ -73,26 +73,30 @@ class WizBankReconciliationReport(models.TransientModel):
 
     # We took below field m2o as date because that selection with
     # date and dynamic filter is not working. you can see out in this wizard.
+    journal_id = fields.Many2one("account.journal",
+                                 string="Bank Account/Journal")
     bnk_st_date = fields.Many2one('account.bank.statement',
                                   string="Date")
     company_id = fields.Many2one("res.company", string="Company",
                                  default=lambda self: self.env.user and
                                  self.env.user.company_id)
-    journal_ids = fields.Many2many("account.journal",
-                                   "wiz_bank_recon_journal_rel",
-                                   "wiz_bankrecon_id", "journal_id",
-                                   string="Bank Accounts")
+    # journal_ids = fields.Many2many("account.journal",
+    #                                "wiz_bank_recon_journal_rel",
+    #                                "wiz_bankrecon_id", "journal_id",
+    #                                string="Bank Accounts")
 
     @api.onchange('company_id')
     def onchange_company_id(self):
         """Onchange company to set journals."""
-        journal_obj = self.env['account.journal']
-        self.journal_ids = [(6, 0, [])]
+        # journal_obj = self.env['account.journal']
+        # self.journal_ids = [(6, 0, [])]
         if self.company_id:
-            journals = journal_obj.search([
-                ('type', '=', 'bank'),
-                ('company_id', '=', self.company_id.id)])
-            self.journal_ids = [(6, 0, journals.ids)]
+            self.bnk_st_date = False
+            self.journal_id = False
+            # journals = journal_obj.search([
+            #     ('type', '=', 'bank'),
+            #     ('company_id', '=', self.company_id.id)])
+            # self.journal_ids = [(6, 0, journals.ids)]
 
     @api.multi
     def export_bank_reconciliation_report(self):
@@ -198,7 +202,8 @@ class WizBankReconciliationReport(models.TransientModel):
         company = self.company_id or False
         company_name = company and company.name or ''
         from_date = datetime.strftime(self.bnk_st_date.sudo().date, '%d/%m/%Y')
-        for journal in self.journal_ids:
+        # for journal in self.journal_ids:
+        for journal in self.journal_id:
 
             # pre_reconcile_cust_bnk_st_lines = bank_st_l_obj.search([
             #     ('date', '>=', prev_year_from_date),

@@ -15,6 +15,10 @@ class AccountInvoice(models.Model):
         ('open', 'Open'), ('paid', 'Paid'),
         ('in_payment', 'In Payment'), ('cancel', 'Cancelled')],
         string="Previous State", default="draft")
+    attachment_ids = fields.One2many(
+        'ir.attachment', 'res_id',
+        domain=[('res_model', '=', 'account.invoice')],
+        string='Attachments')
 
     # @api.model
     # def default_get(self, default_fields):

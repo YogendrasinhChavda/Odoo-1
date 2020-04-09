@@ -1,5 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <!-- Inherit Account Tree view for attachment -->
+    <record id="invoice_tree_inherit_attachment" model="ir.ui.view">
+        <field name="name">account.invoice.tree.inherit.attachment</field>
+        <field name="model">account.invoice</field>
+        <field name="inherit_id" ref="account.invoice_tree"/>
+        <field name="arch" type="xml">
+            <field name="origin" position="after">
+                <field name="attachment_ids"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Inherit Account Form view for attachment -->
+    <record id="invoice_form_inherit_attachment" model="ir.ui.view">
+        <field name="name">account.invoice.form.inherit.attachment</field>
+        <field name="model">account.invoice</field>
+        <field name="inherit_id" ref="account.invoice_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='other_info']" position="after">
+                <page string="Attachments" name="order_attachment" invisible="0">
+                    <field name="attachment_ids" nolable="1" col="4" colspan="4" readonly="1"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
     <!-- Inherited Bills Search View -->
     <record id="view_account_invoice_filter_scs_inherit"
             model="ir.ui.view">
