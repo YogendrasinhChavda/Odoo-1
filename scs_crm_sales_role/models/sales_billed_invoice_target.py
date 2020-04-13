@@ -55,21 +55,25 @@ class SalesBilledInvoiceTargetTeam(models.Model):
 
     @api.multi
     def action_open_target(self):
+        """Set in open state."""
         for team_trg in self:
             team_trg.state = 'open'
 
     @api.multi
     def action_set_to_draft_target(self):
+        """Set in draft state."""
         for team_trg in self:
             team_trg.state = 'draft'
 
     @api.multi
     def action_set_to_done(self):
+        """Set in done state."""
         for team_trg in self:
             team_trg.state = 'done'
 
     @api.multi
     def action_set_to_cancel(self):
+        """Set in cancel state."""
         for team_trg in self:
             team_trg.state = 'cancel'
 
@@ -85,22 +89,27 @@ class SalesBilledInvoiceTargetTeam(models.Model):
         return team_ids
 
     @api.multi
-    @api.depends('team_id',
-                 'team_id.states_team_ids',
-                 'team_id.states_team_ids.sale_team_orders_ids.team_id',
-                 'team_id.states_team_ids.sale_team_invoice_ids.team_id',
-                 'team_id.states_team_ids.sale_team_orders_ids.state',
-                 'team_id.states_team_ids.sale_team_invoice_ids.state',
-                 'team_id.region_team_ids',
-                 'team_id.region_team_ids.sale_team_orders_ids.team_id',
-                 'team_id.region_team_ids.sale_team_invoice_ids.team_id',
-                 'team_id.region_team_ids.sale_team_orders_ids.state',
-                 'team_id.region_team_ids.sale_team_invoice_ids.state',
-                 'team_id.sale_team_orders_ids',
-                 'team_id.sale_team_orders_ids.state',
-                 'team_id.sale_team_invoice_ids',
-                 'team_id.sale_team_invoice_ids.state',
-                 'date_from', 'date_to')
+    @api.depends(
+        'team_id', 'team_id.states_team_ids',
+        'team_id.states_team_ids.sale_team_orders_ids.team_id',
+        'team_id.states_team_ids.sale_team_invoice_ids.team_id',
+        'team_id.states_team_ids.sale_team_orders_ids.state',
+        'team_id.states_team_ids.sale_team_invoice_ids.state',
+        'team_id.region_team_ids',
+        'team_id.region_team_ids.sale_team_orders_ids.team_id',
+        'team_id.region_team_ids.sale_team_invoice_ids.team_id',
+        'team_id.region_team_ids.sale_team_orders_ids.state',
+        'team_id.region_team_ids.sale_team_invoice_ids.state',
+        'team_id.region_team_ids.states_team_ids',
+        'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.team_id',
+        'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.team_id',
+        'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.state',
+        'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.state',
+        'team_id.sale_team_orders_ids',
+        'team_id.sale_team_orders_ids.state',
+        'team_id.sale_team_invoice_ids',
+        'team_id.sale_team_invoice_ids.state',
+        'date_from', 'date_to')
     def _get_sales_teams_orders_and_invoice_info(self):
         sale_obj = self.env['sale.order']
         inv_obj = self.env['account.invoice']
@@ -244,21 +253,25 @@ class SalesBilledInvoiceTarget(models.Model):
 
     @api.multi
     def action_open_target(self):
+        """Set in open state."""
         for team_trg in self:
             team_trg.state = 'open'
 
     @api.multi
     def action_set_to_draft_target(self):
+        """Set in draft state."""
         for team_trg in self:
             team_trg.state = 'draft'
 
     @api.multi
     def action_set_to_done(self):
+        """Set in done state."""
         for team_trg in self:
             team_trg.state = 'done'
 
     @api.multi
     def action_set_to_cancel(self):
+        """Set in cancel state."""
         for team_trg in self:
             team_trg.state = 'cancel'
 
