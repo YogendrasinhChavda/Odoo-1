@@ -2,7 +2,8 @@
 
 from datetime import datetime
 from odoo.tools import date_utils
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class SalesBilledInvoiceTargetTeam(models.Model):
@@ -52,6 +53,24 @@ class SalesBilledInvoiceTargetTeam(models.Model):
         ('cancel', 'Cancelled'),
         ('done', 'Done')],
         default="draft", string="Status")
+    company_id = fields.Many2one("res.company", string="Company",
+                                 default=lambda self: self.env.user and
+                                 self.env.user.company_id)
+
+    @api.constrains('date_from', 'date_to')
+    def _check_from_to_date(self):
+        for rec in self:
+            if rec.date_from > rec.date_to:
+                raise ValidationError(_("Start Date must be less than Or \
+                    Equal to End Date !!"))
+
+    @api.onchange('company_id')
+    def onchange_company_id(self):
+        """Onchange company_id reset the information."""
+        if self.company_id and self.team_id:
+            if self.team_id.company_id and \
+                    self.team_id.company_id.id != self.company_id.id:
+                self.team_id = False
 
     @api.multi
     def action_open_target(self):
@@ -250,6 +269,24 @@ class SalesBilledInvoiceTarget(models.Model):
         ('cancel', 'Cancelled'),
         ('done', 'Done')],
         default="draft", string="Status")
+    company_id = fields.Many2one("res.company", string="Company",
+                                 default=lambda self: self.env.user and
+                                 self.env.user.company_id)
+
+    @api.onchange('company_id')
+    def onchange_company_id(self):
+        """Onchange company_id reset the information."""
+        if self.company_id and self.sales_user_id:
+            if self.sales_user_id.company_id and \
+                    self.sales_user_id.company_id.id != self.company_id.id:
+                self.sales_user_id = False
+
+    @api.constrains('date_from', 'date_to')
+    def _check_from_to_date(self):
+        for rec in self:
+            if rec.date_from > rec.date_to:
+                raise ValidationError(_("Start Date must be less than Or \
+                    Equal to End Date !!"))
 
     @api.multi
     def action_open_target(self):

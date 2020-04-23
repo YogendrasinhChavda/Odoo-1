@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Inherited For Account Invoice for Margin."""
 
+from datetime import datetime
 from odoo import api, fields, models
 
 
@@ -15,6 +16,15 @@ class AccountInvoice(models.Model):
     margin_in_per = fields.Float(compute='_get_invoice_margin_in_percentage',
                                  string='Margin (%)',
                                  store=True)
+
+    @api.model
+    def default_get(self, fields=[]):
+        """Method to update the default value."""
+        current_date = datetime.now().date()
+        res = super(AccountInvoice, self).default_get(fields)
+        if not res.get('date_invoice', False):
+            res.update({'date_invoice': current_date})
+        return res
 
     # @api.multi
     @api.depends('invoice_line_ids', 'invoice_line_ids.quantity',
