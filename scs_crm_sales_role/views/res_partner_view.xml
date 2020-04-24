@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Inherited Res Partner Form view to add team_id -->
+        <record id="view_view_partner_form_team_inherit" model="ir.ui.view">
+            <field name="name">view.res.partner.form.crm.team.inherit</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='user_id']" position="attributes">
+                    <attribute name="string">Sales Person</attribute>
+                    <attribute name="placeholder">Sales Person</attribute>
+                </xpath>
+                <xpath expr="//field[@name='user_id']" position="after">
+                    <field name="team_id" placeholder="Sales Team"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_invoice_report_pivot" model="ir.ui.view">
+         <field name="name">sale.invoice.report.pivot</field>
+         <field name="model">sale.invoice.report</field>
+         <field name="arch" type="xml">
+             <pivot string="Sales Report" disable_linking="True"> <!-- disable_linking="True" -->
+                 <!-- <field name="confirmation_date" type="col" interval="year"/> -->
+                 <!-- <field name="confirmation_date" interval="month" type="row"/> -->
+                <field name="user_id" type="row"/>
+              <!--
+                 <field name="untaxed_amount_to_invoice" type="measure"/>
+                 <field name="untaxed_amount_invoiced" type="measure"/> 
+                <field name="categ_id" type="row"/> -->
+                <field name="date" type="col"/>
+                <field name="price_total" type="measure"/>
+             </pivot>
+         </field>
+    </record>
+
+    <record id="view_sale_invoice_report_graph" model="ir.ui.view">
+         <field name="name">sale.invoice.report.graph</field>
+         <field name="model">sale.invoice.report</field>
+         <field name="arch" type="xml">
+             <graph string="Sales Report">
+                 <field name="user_id"/>
+                 <!-- <field name="categ_id"/> -->
+                 <field name="price_total" type="measure"/>
+                 <!-- <field name="confirmation_date" type="row" interval="month"/> -->
+          <!--        <field name="user_id" type="row"/> -->
+                 <!-- <field name="price_subtotal" type="measure"/> -->
+               <!--   <field name="untaxed_amount_to_invoice" type="measure"/>
+                 <field name="untaxed_amount_invoiced" type="measure"/> -->
+             </graph>
+         </field>
+    </record>
+
+    <!-- Custom reports (aka filters) -->
+    <record id="sale_filter_invoice_report_bysalesteam" model="ir.filters">
+        <field name="name">By Sales Team</field>
+        <field name="model_id">sale.invoice.report</field>
+        <field name="domain">[]</field>
+        <field name="user_id" eval="False"/>
+        <field name="context">{'group_by': ['date:month', 'team_id']}</field>
+    </record>
+    <record id="sale_filter_invoice_product" model="ir.filters">
+        <field name="name">By Product</field>
+        <field name="model_id">sale.invoice.report</field>
+        <field name="domain">[]</field>
+        <field name="user_id" eval="False"/>
+        <field name="context">{'group_by': ['date:month', 'product_id'], 'set_visible':True, 'residual_invisible':True}</field>
+    </record>
+    <record id="sale_filter_invoice_product_category" model="ir.filters">
+        <field name="name">By Product Category</field>
+        <field name="model_id">sale.invoice.report</field>
+        <field name="domain">[]</field>
+        <field name="user_id" eval="False"/>
+        <field name="context">{'group_by': ['date:month', 'categ_id'], 'residual_invisible':True}</field>
+    </record>
+    <record id="sale_filter_invoice_refund" model="ir.filters">
+        <field name="name">By Credit Note</field>
+        <field name="model_id">sale.invoice.report</field>
+        <field name="domain">[('type', '=', 'out_refund')]</field>
+        <field name="user_id" eval="False"/>
+        <field name="context">{'group_by': ['date:month', 'user_id']}</field>
+    </record>
+    <record id="sale_filter_invoice_country" model="ir.filters">
+        <field name="name">By Country</field>
+        <field name="model_id">sale.invoice.report</field>
+        <field name="domain">[]</field>
+        <field name="user_id" eval="False"/>
+        <field name="context">{'group_by': ['date:month', 'country_id']}</field>
+    </record>
+
+    <record id="view_sale_invoice_report_search" model="ir.ui.view">
+        <field name="name">sale.invoice.report.search</field>
+        <field name="model">sale.invoice.report</field>
+        <field name="arch" type="xml">
+            <search string="Sale Report">
+                <filter string="My Invoices" name="my_invoice" domain="[('user_id', '=', uid)]"/>
+                <separator/>
+                <field name="date"/>
+                <separator/>
+                <filter string="To Invoice" name="toinvoice" domain="[('state','=','draft')]" help = "Draft Invoices"/>
+                <filter string="Invoiced" name="current" domain="[('state','not in', ('draft','cancel'))]"/>
+                <separator/>
+                <filter string="Customers" name="customer" domain="['|', ('type','=','out_invoice'),('type','=','out_refund')]"/>
+                <filter string="Vendors" name="supplier" domain="['|', ('type','=','in_invoice'),('type','=','in_refund')]"/>
+                <separator/>
+                <filter string="Invoices" name="invoice" domain="['|', ('type','=','out_invoice'),('type','=','in_invoice')]"/>
+                <filter string="Credit Notes" name="creditnote" domain="['|', ('type','=','out_refund'),('type','=','in_refund')]"/>
+                <field name="partner_id" operator="child_of"/>
+                <field name="user_id" />
+                <field name="product_id" />
+                <field name="categ_id" filter_domain="[('categ_id', 'child_of', self)]"/>
+                <group expand="1" string="Group By">
+                    <filter string="Salesperson" name='user' context="{'group_by':'user_id'}"/>
+                    <filter string="Partner" name="partner_id" context="{'group_by':'partner_id','residual_visible':True}"/>
+                    <filter string="Product Category" name="category_product" context="{'group_by':'categ_id','residual_invisible':True}"/>
+                    <filter string="Status" name="status" context="{'group_by':'state'}"/>
+                    <filter string="Analytic Account" name="account_analytic_id" context="{'group_by':'account_analytic_id'}" groups="analytic.group_analytic_accounting" />
+                    <filter string="Company" name="company" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
+                    <separator orientation="vertical" />
+                    <filter string="Date" name="date" context="{'group_by':'date'}"/>
+                    <filter string="Due Date" name="duemonth" context="{'group_by':'date_due:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sale_invoice_report_view" model="ir.actions.act_window">
+        <field name="name">Sales Report</field>
+        <field name="res_model">sale.invoice.report</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">pivot,graph</field>
+        <field name="context">{'search_default_current':1, 'search_default_customer':1, 'group_by':[], 'group_by_no_leaf':1, 'search_default_year': 1}</field>
+        <field name="search_view_id" ref="view_sale_invoice_report_search"/>
+        <field name="help">From this report, you can have an overview of the amount invoiced to your customers. The search tool can also be used to personalise your Invoices reports and so, match this analysis to your needs.</field>
+    </record>
+
+    <!-- Menuitem for Sales Invoice Report -->
+<!--     <menuitem id="menu_sale_invoice_report"
+        name="Sales Report"
+        action="action_sale_invoice_report_view"
+        parent="sale.menu_sale_report"
+        sequence="2"/> -->
+
+
+    <!-- Account Invoice Line Pivot View -->
+    <record id="view_sale_account_invoice_report_pivot" model="ir.ui.view">
+         <field name="name">sale.account.invoice.report.pivot</field>
+         <field name="model">account.invoice.line</field>
+         <field name="arch" type="xml">
+             <pivot string="Sales Report (Invoice Lines)">
+                <!-- disable_linking="True" -->
+                <field name="x_studio_signed_amount" type="measure"/>
+                <field name="x_studio_partner_salesperson" type="row"/>
+             </pivot>
+         </field>
+    </record>
+
+    <record id="view_sale_account_invoice_report_search" model="ir.ui.view">
+        <field name="name">sale.invoice.account.report.search</field>
+        <field name="model">account.invoice.line</field>
+        <field name="arch" type="xml">
+            <search string="Sale Report">
+                <filter string="My Invoices" name="my_invoice"
+                    domain="[('user_id', '=', uid)]"/>
+                <separator/>
+                <field name="x_studio_invoice_date"/>
+                <separator/>
+                <filter string="To Invoice (Draft Invoice)"
+                    name="toinvoice"
+                    domain="[('x_studio_invoice_reference_status','=','draft')]"
+                    help="Draft Invoices"/>
+                <filter string="Invoiced" name="current"
+                    domain="[('x_studio_invoice_reference_status','not in', ('draft','cancel'))]"/>
+                <separator/>
+                <filter string="Customers Invoices"
+                    name="customer_invoices" domain="['|', ('invoice_id.type','=','out_invoice'),('invoice_id.type','=','out_refund')]"/>
+                <separator/>
+                <filter string="Accounts (4000)"
+                    name="cust_inv_accounts"
+                    domain="[('account_id','ilike','4000')]"/>
+                <separator/>
+                <filter string="Current Month" name="current_month"
+                    domain="[('x_studio_invoice_date','&lt;',(context_today()+relativedelta(months=1)).strftime('%%Y-%%m-01')), ('x_studio_invoice_date','&gt;=',time.strftime('%%Y-%%m-01'))]"/>
+                <separator/>
+                <filter string="Previous Month"
+                    name="previous_month"
+                    domain="[('x_studio_invoice_date','&gt;=',(context_today()-relativedelta(months=1)).strftime('%%Y-%%m-01')),('x_studio_invoice_date','&lt;',time.strftime('%%Y-%%m-01'))]"/>
+                <separator/>
+                <filter string="Current Fiscal Year"
+                    name="current_fiscal_year"
+                    domain="[('x_studio_invoice_date','&gt;=',(datetime.datetime.now().replace(day=1,month=7) - relativedelta(years=1)).strftime('%%Y-%%m-%%d')),('x_studio_invoice_date','&lt;=',(datetime.datetime.now().replace(day=30,month=6)).strftime('%%Y-%%m-%%d'))]"/>
+                <group expand="1" string="Group By">
+                    <filter string="Salesperson" name='user' context="{'group_by':'x_studio_partner_salesperson'}"/>
+                    <filter string="Status" name="status"
+                        context="{'group_by':'x_studio_invoice_reference_status'}"/>
+                    <filter string="Company" name="company" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
+                    <separator orientation="vertical" />
+                    <filter string="Invoice Date" name="x_studio_invoice_date"
+                        context="{'group_by':'x_studio_invoice_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Sales Report Action Based on account.invoice.line -->
+    <record id="action_sale_account_invoice_report" model="ir.actions.act_window">
+        <field name="name">Sales Report (Invoice Lines)</field>
+        <field name="res_model">account.invoice.line</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">pivot,tree,form</field>
+        <field name="context">{'search_default_current': 1, 'search_default_customer_invoices': 1, 'search_default_cust_inv_accounts': 1, 'search_default_current_month': 1}</field>
+        <field name="search_view_id" ref="view_sale_account_invoice_report_search"/>
+        <field name="help">This module provide analisis for sales.</field>
+    </record>
+
+    <!-- Sales Report Action View Based on account.invoice.line -->
+    <record id="action_sale_account_invoice_report_view" model="ir.actions.act_window.view">
+        <field eval="0" name="sequence"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_sale_account_invoice_report_pivot"/>
+        <field name="act_window_id" ref="action_sale_account_invoice_report"/>
+    </record>
+
+<!--     <record id="action_sale_account_inv_rep_search_view" model="ir.actions.act_window.view">
+        <field eval="1" name="sequence"/>
+        <field name="view_mode">search</field>
+        <field name="view_id" ref="view_sale_account_invoice_report_search"/>
+        <field name="act_window_id" ref="action_sale_account_invoice_report"/>
+    </record> -->
+
+    <!-- Menuitem for Sales Invoice Report -->
+    <menuitem id="menu_sale_account_invoice_report"
+        name="Sales Report (Invoice Lines)"
+        action="action_sale_account_invoice_report"
+        parent="sale.menu_sale_report"
+        sequence="2"/>
+</odoo>

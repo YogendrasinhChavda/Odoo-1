@@ -17,7 +17,8 @@
 
         <record id="account_financial_report_incomepercentage0"
             model="account.financial.html.report.line">
-            <field name="name">Income Percentage</field>
+            <!-- <field name="name">Income Percentage</field> -->
+            <field name="name">Gross profit %</field>
             <field name="code">INTP</field>
             <field name="formulas">balance = (GRP.balance / OPINC.balance ) * 100</field>
             <field name="parent_id" eval="False"/>
@@ -39,7 +40,8 @@
 
         <record id="account_financial_report_operationalpercentage0"
             model="account.financial.html.report.line">
-            <field name="name">Operational Percentage</field>
+            <!-- <field name="name">Operational Percentage</field> -->
+            <field name="name">Operating profit %</field>
             <field name="code">OTP</field>
             <field name="formulas">balance = (TOP.balance / OPINC.balance ) * 100</field>
             <field name="parent_id" eval="False"/>
@@ -51,7 +53,8 @@
 
          <record id="account_financial_report_netpercentage0"
             model="account.financial.html.report.line">
-            <field name="name">Net Percentage</field>
+            <!-- <field name="name">Net Percentage</field> -->
+            <field name="name">Net Profit %</field>
             <field name="code">NTP</field>
             <field name="formulas">balance = (NEP.balance / OPINC.balance ) * 100</field>
             <field name="parent_id" eval="False"/>
