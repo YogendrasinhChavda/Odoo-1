@@ -1,4 +1,4 @@
-"""Wizard Bank Reconcilition Report TransientModel."""
+"""Wizard Bank Reconciliation Report TransientModel."""
 
 import xlsxwriter
 import os
@@ -41,10 +41,10 @@ def _offset_format_timestamp2(src_tstamp_str, src_format, dst_format,
 
 
 class WizBankReconciliationReportExported(models.TransientModel):
-    """Wizard Bank Reconcilition Report Exported TransientModel."""
+    """Wizard Bank Reconciliation Report Exported TransientModel."""
 
     _name = 'wiz.bank.reconciliation.report.exported'
-    _description = "Wizard Bank Reconcilition Report Exported"
+    _description = "Wizard Bank Reconciliation Report Exported"
 
     file = fields.Binary("Click On Download Link To Download Xlsx File",
                          readonly=True)
@@ -52,10 +52,10 @@ class WizBankReconciliationReportExported(models.TransientModel):
 
 
 class WizBankReconciliationReport(models.TransientModel):
-    """Wizard Bank Reconcilition Report TransientModel."""
+    """Wizard Bank Reconciliation Report TransientModel."""
 
     _name = 'wiz.bank.reconciliation.report'
-    _description = "Wizard Bank Reconcilition Report"
+    _description = "Wizard Bank Reconciliation Report"
 
     # @api.model
     # def default_get(self, fields=[]):
@@ -107,7 +107,7 @@ class WizBankReconciliationReport(models.TransientModel):
         bank_st_obj = self.env['account.bank.statement']
         bank_st_l_obj = self.env['account.bank.statement.line']
         # sheet Development
-        file_path = 'Bank Reconcilition Report.xlsx'
+        file_path = 'Bank Reconciliation Report.xlsx'
         workbook = xlsxwriter.Workbook('/tmp/' + file_path)
         # num_format = workbook.add_format({'num_format': 'dd/mm/yy'})
 
@@ -462,7 +462,7 @@ class WizBankReconciliationReport(models.TransientModel):
                     col += 1
                     worksheet.write(row, col, vend_pay_memo or '', cell_l_fmat)
                     col += 1
-                    worksheet.write(row, col, balance or '', cell_r_fmat)
+                    worksheet.write(row, col, balance or 0.0, cell_r_fmat)
                     col = 0
                     row += 1
 
@@ -491,7 +491,7 @@ class WizBankReconciliationReport(models.TransientModel):
             worksheet.merge_range(row, 0, row, 3,
                                   'Current Reconciled Balance',
                                   header_cell_l_fmat)
-            worksheet.write(row, 5, round(curr_bal, 2) or 0.0,
+            worksheet.write(row, 5, round(filter_bal, 2) or 0.0,
                             cell_r_bold_noborder)
             row += 1
 
@@ -596,7 +596,7 @@ class WizBankReconciliationReport(models.TransientModel):
             pass
         wiz_rec = wiz_exported_obj.create({
             'file': buf,
-            'name': 'Bank Reconcilition Report.xlsx'
+            'name': 'Bank Reconciliation Report.xlsx'
         })
         form_view = self.env.ref(
             'account_reports_extended.wiz_bank_reconcil_rep_exported_form')
