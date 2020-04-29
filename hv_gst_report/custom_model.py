@@ -340,6 +340,7 @@ class GstReport(models.TransientModel):
             total_net += values['net']
             total_tax += values['tax']
             current_id = values['id']
+            # current_id : this is actually accout tax id.
             if offset == 0:
                 lines.append({
                     'id': 'tax_%s' % (current_id),
@@ -384,13 +385,15 @@ class GstReport(models.TransientModel):
                         left join account_payment f on a.payment_id = f.id
                         left join account_journal c on a.journal_id=c.id
                         left join account_move d on a.move_id=d.id
-                    where a.date>='%s' and a.date<='%s') b where
+                    where a.date>='%s' and a.date<='%s' and
+                    a.company_id = '%s') b where
                     b.tax_line_id = %s order by b.date,
                     b.jentry, abs(b.net) desc""" % (
                     options.get('reporttype'), company, company,
                     options.get('reporttype'),
                     options.get('date').get('date_from'),
-                    options.get('date').get('date_to'), current_id)
+                    options.get('date').get('date_to'), company,
+                    current_id)
 
                 self.env.cr.execute(select, [])
                 results1 = self.env.cr.dictfetchall()

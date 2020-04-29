@@ -337,9 +337,10 @@ class WizBankReconciliationReport(models.TransientModel):
             for cust_pay_line in reconcile_cust_bnk_st_lines:
                 move_lines = move_l_obj.search([
                     ('statement_line_id', '=', cust_pay_line.id),
-                    ('payment_id', '!=', False)])
+                    ('payment_id', '!=', False),
+                    ('balance', '>=', 0.0)])
                 for move_l in move_lines:
-                    balance = move_l.balance
+                    balance = move_l.balance or 0.0
                     tot_cust_payment = tot_cust_payment + balance or 0.0
                     payment_date = ''
                     if move_l.date:
@@ -411,9 +412,10 @@ class WizBankReconciliationReport(models.TransientModel):
             for vend_pay_line in reconcile_vend_bnk_st_lines:
                 move_lines = move_l_obj.search([
                     ('statement_line_id', '=', vend_pay_line.id),
-                    ('payment_id', '!=', False)])
+                    ('payment_id', '!=', False),
+                    ('balance', '<=', 0.0)])
                 for move_l in move_lines:
-                    balance = move_l.balance
+                    balance = move_l.balance or 0.0
                     tot_vend_payment = tot_vend_payment + balance or 0.0
                     payment_date = ''
                     if move_l.date:
