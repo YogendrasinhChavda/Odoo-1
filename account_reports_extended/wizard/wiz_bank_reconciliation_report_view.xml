@@ -74,6 +74,7 @@
         <field name="target">new</field>
     </record>
 
+    <!-- Assigned Accounting & Finance / Accountant group -->
     <menuitem
         id="menu_wiz_bank_reconciliation"
         name="Bank Reconciliation Report"
