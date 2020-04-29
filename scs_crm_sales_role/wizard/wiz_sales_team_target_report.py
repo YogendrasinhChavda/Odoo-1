@@ -7,7 +7,8 @@ from datetime import datetime
 # from calendar import monthrange
 # from dateutil.relativedelta import relativedelta
 
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import Warning
 from odoo.tools import ustr  # , DEFAULT_SERVER_DATE_FORMAT as DF
 
 
@@ -69,21 +70,41 @@ class WizSalesTeamTargetReport(models.TransientModel):
     company_id = fields.Many2one("res.company", string="Company",
                                  default=lambda self: self.env.user and
                                  self.env.user.company_id)
-    date_from = fields.Date(string='Start Date')
-    date_to = fields.Date(string='End Date')
+    date_from = fields.Date(string='From Date')
+    date_to = fields.Date(string='To Date')
 
     @api.multi
     def export_sales_team_target_report(self):
         """Method to generate the Sales Team target report."""
-        # sales_team_obj = self.env['crm.team']
+        sales_team_obj = self.env['crm.team']
+        country_obj = self.env['res.country']
+        state_obj = self.env['res.country.state']
+        sale_obj = self.env['sale.order']
         wiz_exported_obj = self.env['wiz.sales.team.target.report.exported']
-        # team_ids = sales_team_obj.search([('active', '=', True)])
+
+        if self.date_from > self.date_to:
+            raise Warning(_("To date must be greater than \
+                or Equals to from date !!"))
+
         file_path = 'YTM Sales Team Report.xlsx'
         workbook = xlsxwriter.Workbook('/tmp/' + file_path)
-        worksheet = workbook.add_worksheet("TESTING")
+        worksheet = workbook.add_worksheet("YTM Sales Team Report")
 
         cell_font_fmt = workbook.add_format({
             'font_name': 'Arial',
+        })
+        # cell_center_fmt = workbook.add_format({
+        #     'font_name': 'Arial',
+        #     'align': 'center',
+        # })
+        cell_left_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'left',
+        })
+        cell_left_color_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'left',
+            'color': '#0070C0'
         })
         cell_bg_fmt = workbook.add_format({
             'font_name': 'Arial',
@@ -112,7 +133,41 @@ class WizSalesTeamTargetReport(models.TransientModel):
         row += 1
         worksheet.write(row, col, " ", cell_bg_fmt)
         row += 1
-        worksheet.write(row, col, "Australia Actual", cell_bg_fmt1)
+
+        # ---------------------------------------------------------------
+        sale_ids = sale_obj.search([
+            ('confirmation_date', '>=', self.date_from),
+            ('confirmation_date', '<=', self.date_to),
+            ('state', 'in', ['sale', 'done'])])
+
+        print("\n sale_ids::::::1::::::::", sale_ids)
+        partner_ids = sale_ids.mapped('partner_id')
+        # team_ids = sale_ids.mapped('team_id')
+        country_ids = sale_ids.mapped('partner_id').mapped('country_id')
+        state_ids = sale_ids.mapped('partner_id').mapped('state_id')
+        print("\n partner_ids::::::2::::::::", partner_ids)
+        print("\n country_ids::::::3::::::::", country_ids)
+        print("\n state_ids::::::4::::::::", state_ids)
+        for country_id in country_obj.search([
+                ('id', 'in', country_ids.ids)], order="name"):
+            worksheet.write(row, col,
+                            country_id.name + " Actual", cell_bg_fmt1)
+            row += 1
+            sale_country_ids = sale_obj.search([
+                ('confirmation_date', '>=', self.date_from),
+                ('confirmation_date', '<=', self.date_to),
+                ('partner_id.country_id', '=', country_id.id),
+                ('state', 'in', ['sale', 'done'])])
+            # sales_team_obj.search([('')])
+            sale_team_ids = sale_country_ids.mapped('team_id')
+            for team_id in sale_team_ids:
+                worksheet.write(row, col,
+                                team_id.name + " Actual", cell_left_fmt)
+                row += 1
+                worksheet.write(row, col,
+                                team_id.name + " Budget", cell_left_color_fmt)
+                row += 1
+        # ---------------------------------------------------------------
 
         workbook.close()
         buf = base64.encodestring(open('/tmp/' + file_path, 'rb').read())
