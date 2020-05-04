@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherited Action Act window to add the view reference -->
+    <act_window
+       id="account.act_account_journal_2_account_bank_statement"
+       name="Bank statements"
+       view_id="account.view_bank_statement_tree"
+       context="{'search_default_journal_id': active_id, 'default_journal_id': active_id}"
+       res_model="account.bank.statement"
+       src_model="account.journal"/>
+
+    <!-- Added tree view of account bank statement to show the date only in tree -->
+    <record id="account_bank_st_view_tree" model="ir.ui.view">
+        <field name="name">account.bank.st.view.tree</field>
+        <field name="model">account.bank.statement</field>
+        <field name="arch" type="xml">
+            <tree string="Bank Statement Dates">
+                <field name="date" required="1"/>
+                <field name="state" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+</odoo>

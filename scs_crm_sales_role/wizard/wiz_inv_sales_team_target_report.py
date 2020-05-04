@@ -80,9 +80,10 @@ class WizSalesTeamTargetReport(models.TransientModel):
         # sales_team_obj = self.env['crm.team']
         # state_obj = self.env['res.country.state']
         country_obj = self.env['res.country']
-        sale_obj = self.env['sale.order']
+        # sale_obj = self.env['sale.order']
         wiz_exported_obj = self.env['wiz.sales.team.target.report.exported']
         trg_team_obj = self.env['sales.billed.invoice.target.team']
+        inv_obj = self.env['account.invoice']
 
         if self.date_from > self.date_to:
             raise Warning(_("To date must be greater than \
@@ -209,15 +210,16 @@ class WizSalesTeamTargetReport(models.TransientModel):
         row += 1
 
         # ---------------------------------------------------------------
-        sale_ids = sale_obj.search([
-            ('confirmation_date', '>=', self.date_from),
-            ('confirmation_date', '<=', self.date_to),
+        inv_ids = inv_obj.search([
+            ('date_invoice', '>=', self.date_from),
+            ('date_invoice', '<=', self.date_to),
+            ('type', '=', 'out_invoice'),
             ('company_id', '=', company),
-            ('state', 'in', ['sale', 'done'])])
+            ('state', 'in', ['open', 'in_payment', 'paid'])])
 
         # partner_ids = sale_ids.mapped('partner_id')
         # team_ids = sale_ids.mapped('team_id')
-        country_ids = sale_ids.mapped('partner_id').mapped('country_id')
+        country_ids = inv_ids.mapped('partner_id').mapped('country_id')
         # state_ids = sale_ids.mapped('partner_id').mapped('state_id')
         for country_id in country_obj.search([
                 ('id', 'in', country_ids.ids)], order="name"):
@@ -228,12 +230,13 @@ class WizSalesTeamTargetReport(models.TransientModel):
             worksheet.write(row, col,
                             country_id.name + " Actual", cell_bg_cou_actual)
             row += 1
-            sale_country_ids = sale_obj.search([
-                ('confirmation_date', '>=', self.date_from),
-                ('confirmation_date', '<=', self.date_to),
+            sale_country_ids = inv_obj.search([
+                ('date_invoice', '>=', self.date_from),
+                ('date_invoice', '<=', self.date_to),
                 ('partner_id.country_id', '=', country_id.id),
+                ('type', '=', 'out_invoice'),
                 ('company_id', '=', company),
-                ('state', 'in', ['sale', 'done'])])
+                ('state', 'in', ['open', 'in_payment', 'paid'])])
             # sales_team_obj.search([('')])
             sale_team_ids = sale_country_ids.mapped('team_id')
             for team_id in sale_team_ids:
@@ -276,13 +279,14 @@ class WizSalesTeamTargetReport(models.TransientModel):
                     prev_year_month_en_dt = \
                         prev_year_month_en_dt.strftime("%Y-%m-%d 23:59:59")
 
-                    sale_team_country_wise_ids = sale_obj.search([
-                        ('confirmation_date', '>=', month_st_dt),
-                        ('confirmation_date', '<=', month_en_dt),
+                    sale_team_country_wise_ids = inv_obj.search([
+                        ('date_invoice', '>=', month_st_dt),
+                        ('date_invoice', '<=', month_en_dt),
                         ('partner_id.country_id', '=', country_id.id),
+                        ('type', '=', 'out_invoice'),
                         ('team_id', '=', team_id.id),
                         ('company_id', '=', company),
-                        ('state', 'in', ['sale', 'done'])])
+                        ('state', 'in', ['open', 'in_payment', 'paid'])])
                     team_sales_total = \
                         sum(sale_team_country_wise_ids.mapped('amount_total'))
 
@@ -299,13 +303,14 @@ class WizSalesTeamTargetReport(models.TransientModel):
                     worksheet.write(row + 1, row_col,
                                     round(team_sales_budget_trg_tot, 2),
                                     cell_right_color_fmt)
-                    pre_sale_team_country_ids = sale_obj.search([
-                        ('confirmation_date', '>=', prev_year_month_st_dt),
-                        ('confirmation_date', '<=', prev_year_month_en_dt),
+                    pre_sale_team_country_ids = inv_obj.search([
+                        ('date_invoice', '>=', prev_year_month_st_dt),
+                        ('date_invoice', '<=', prev_year_month_en_dt),
                         ('partner_id.country_id', '=', country_id.id),
+                        ('type', '=', 'out_invoice'),
                         ('team_id', '=', team_id.id),
                         ('company_id', '=', company),
-                        ('state', 'in', ['sale', 'done'])])
+                        ('state', 'in', ['open', 'in_payment', 'paid'])])
                     pre_team_sales_total = \
                         sum(pre_sale_team_country_ids.mapped('amount_total'))
 
@@ -355,13 +360,14 @@ class WizSalesTeamTargetReport(models.TransientModel):
                                 update({
                                     'dt_year_tot_bal':
                                     tot_balance_dict[month_st_dt]
-                                    [country_id.id]['dt_year_tot_bal'] +
-                                    team_sales_total,
+                                    [country_id.id].
+                                        get('dt_year_tot_bal', 0.0) +
+                                        team_sales_total,
                                     'dt_prev_year_tot_bal':
                                     tot_balance_dict[month_st_dt]
-                                    [country_id.id]
-                                    ['dt_prev_year_tot_bal'] +
-                                    pre_team_sales_total,
+                                    [country_id.id].
+                                        get('dt_prev_year_tot_bal', 0.0) +
+                                        pre_team_sales_total,
                                 })
                         else:
                             tot_balance_dict[month_st_dt].update({
