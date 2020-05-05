@@ -27,7 +27,8 @@
             <form string="Sales Team Target Report">
                 <group>
                     <field name="company_id" required="1"/>
-                    <field name="date_from" required="1"/>
+                    <field name="date_from" required="1"
+                        context="{'from_wiz_form_view': True}"/>
                     <field name="date_to" required="1"/>
                 </group>
                 <footer>
@@ -51,17 +52,17 @@
     </record>
 
     <!-- Menuitem of Management Report Main menu -->
-<!--     <menuitem
+    <menuitem
         id="menu_management_reports"
         name="Management Reports"
         parent="sale.menu_sale_report"
-        sequence="5"/> -->
+        sequence="5"/>
 
     <!-- Menuitem of Wizard Sales Team Target Report -->
-<!--     <menuitem
+    <menuitem
         id="menu_wiz_sales_team_target_report"
         name="Sales Team Target Report"
         action="action_wiz_sales_team_target_report"
         parent="menu_management_reports"
-        sequence="6"/> -->
+        sequence="6"/>
 </odoo>

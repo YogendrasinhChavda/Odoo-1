@@ -9,7 +9,7 @@ from calendar import monthrange
 from dateutil.rrule import rrule, MONTHLY
 
 from odoo import models, fields, api, _
-from odoo.exceptions import Warning
+from odoo.exceptions import Warning, ValidationError
 from odoo.tools import ustr  # , DEFAULT_SERVER_DATE_FORMAT as DF
 
 
@@ -74,6 +74,29 @@ class WizSalesTeamTargetReport(models.TransientModel):
     date_from = fields.Date(string='From Date')
     date_to = fields.Date(string='To Date')
 
+    @api.onchange('date_from')
+    def _onchange_from_date(self):
+        """Onchange Method to update end date."""
+        from_dt = self.date_from
+        if from_dt and self.env.context.get('from_wiz_form_view', False):
+            month_days = monthrange(from_dt.year, from_dt.month)
+            self.date_to = from_dt.replace(day=int(month_days[1]))
+
+    @api.constrains('date_from')
+    def _check_from_date_constrains(self):
+        """Method to check From date as First of any month Constrains."""
+        for wiz in self:
+            if wiz.date_from and wiz.date_from.day != 1:
+                raise ValidationError(_("Please, Select Only First Date of \
+                    Any Month as 'From Date' !!"))
+
+    @api.constrains('date_from', 'date_to')
+    def _check_from_to_date(self):
+        for wiz in self:
+            if wiz.date_from > wiz.date_to:
+                raise ValidationError(_("'From Date' must be less than Or \
+                    Equal to 'To Date' !!"))
+
     @api.multi
     def export_sales_team_target_report(self):
         """Method to generate the Sales Team target report."""
@@ -123,6 +146,19 @@ class WizSalesTeamTargetReport(models.TransientModel):
             'color': '#0070C0',
             'num_format': '#,##0.00'
         })
+        cell_right_bold_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'right',
+            'num_format': '#,##0.00',
+            'bold': 1,
+            'border': 1
+        })
+        cell_left_bold_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'left',
+            'bold': 1,
+            'border': 1
+        })
         cell_right_fmt = workbook.add_format({
             'font_name': 'Arial',
             'align': 'right',
@@ -144,6 +180,21 @@ class WizSalesTeamTargetReport(models.TransientModel):
             'align': 'right',
             'color': '#FFFFFF',
             'num_format': '#,##0.00'
+        })
+        cell_right_bold_budget_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'right',
+            'num_format': '#,##0.00',
+            'color': '#0070C0',
+            'bold': 1,
+            'border': 1
+        })
+        cell_left_bold_budget_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'left',
+            'bold': 1,
+            'border': 1,
+            'color': '#0070C0',
         })
 
         worksheet.set_column(0, 0, 35)
@@ -368,6 +419,19 @@ class WizSalesTeamTargetReport(models.TransientModel):
                                     [country_id.id].
                                         get('dt_prev_year_tot_bal', 0.0) +
                                         pre_team_sales_total,
+
+                                    'team_sales_budget_trg_tot_bal':
+                                    tot_balance_dict[month_st_dt]
+                                    [country_id.id].get(
+                                        'team_sales_budget_trg_tot_bal', 0.0) +
+                                        team_sales_budget_trg_tot,
+
+                                    'pre_team_sales_budget_trg_tot_bal':
+                                    tot_balance_dict[month_st_dt]
+                                    [country_id.id].get(
+                                        'pre_team_sales_budget_trg_tot_bal',
+                                        0.0) +
+                                        pre_team_sales_budget_trg_tot,
                                 })
                         else:
                             tot_balance_dict[month_st_dt].update({
@@ -375,6 +439,10 @@ class WizSalesTeamTargetReport(models.TransientModel):
                                     'dt_year_tot_bal': team_sales_total,
                                     'dt_prev_year_tot_bal':
                                     pre_team_sales_total,
+                                    'team_sales_budget_trg_tot_bal':
+                                    team_sales_budget_trg_tot,
+                                    'pre_team_sales_budget_trg_tot_bal':
+                                    pre_team_sales_budget_trg_tot
                                 }
                             })
                 # We added 2 row plus because added Budget and actual team.
@@ -389,6 +457,14 @@ class WizSalesTeamTargetReport(models.TransientModel):
                     pre_sale_tot = \
                         tot_balance_dict[month_st_dt][country_id.id].\
                         get('dt_prev_year_tot_bal', 0.0)
+
+                    sale_budget_tot = \
+                        tot_balance_dict[month_st_dt][country_id.id].\
+                        get('team_sales_budget_trg_tot_bal', 0.0)
+                    pre_sale_budget_tot = \
+                        tot_balance_dict[month_st_dt][country_id.id].\
+                        get('pre_team_sales_budget_trg_tot_bal', 0.0)
+
                     worksheet.write(row_for_tot_bal, col_for_tot_bal + 1,
                                     round(sale_tot, 2),
                                     cell_bg_cou_actual)
@@ -402,9 +478,97 @@ class WizSalesTeamTargetReport(models.TransientModel):
                     worksheet.write(row_for_tot_bal, col_for_tot_bal + 3,
                                     ustr(round(tot_variance, 2)) + '%',
                                     cell_bg_cou_right_actual)
+
+                    if tot_balance_dict[month_st_dt].\
+                            get('year_grand_tot_bal', False) and \
+                            tot_balance_dict[month_st_dt].\
+                            get('pre_year_grand_tot_bal', False):
+                        tot_balance_dict[month_st_dt].update({
+                            'year_grand_tot_bal': sale_tot +
+                            tot_balance_dict[month_st_dt]
+                            ['year_grand_tot_bal'],
+                            'pre_year_grand_tot_bal': pre_sale_tot +
+                            tot_balance_dict[month_st_dt]
+                            ['pre_year_grand_tot_bal']
+                        })
+                    else:
+                        tot_balance_dict[month_st_dt].update({
+                            'year_grand_tot_bal': sale_tot,
+                            'pre_year_grand_tot_bal': pre_sale_tot
+                        })
+
+                    if tot_balance_dict[month_st_dt].\
+                            get('team_budget_trg_tot_bal', False) and \
+                            tot_balance_dict[month_st_dt].\
+                            get('pre_team_budget_trg_tot_bal', False):
+                        tot_balance_dict[month_st_dt].update({
+                            'team_budget_trg_tot_bal': sale_budget_tot +
+                            tot_balance_dict[month_st_dt]
+                            ['team_budget_trg_tot_bal'],
+
+                            'pre_team_budget_trg_tot_bal':
+                            pre_sale_budget_tot +
+                            tot_balance_dict[month_st_dt]
+                            ['pre_team_budget_trg_tot_bal']
+                        })
+                    else:
+                        tot_balance_dict[month_st_dt].update({
+                            'team_budget_trg_tot_bal': sale_budget_tot,
+                            'pre_team_budget_trg_tot_bal':
+                            pre_sale_budget_tot
+                        })
+
                 col_for_tot_bal = col_for_tot_bal + 3
+
+        row += 1
+        worksheet.write(row, col, "Grand Total", cell_left_bold_fmt)
+        row += 1
+        worksheet.write(row, col, "Budget Total", cell_left_bold_budget_fmt)
+        row -= 1
+        col += 1
+        for month_st_dt in dates:
+            if tot_balance_dict.get(month_st_dt, False):
+                sal_tot = tot_balance_dict[month_st_dt].\
+                    get('year_grand_tot_bal', 0.0)
+                pre_sal_tot = tot_balance_dict[month_st_dt].\
+                    get('pre_year_grand_tot_bal', 0.0)
+
+                sal_budget_trg_tot = tot_balance_dict[month_st_dt].\
+                    get('team_budget_trg_tot_bal', 0.0)
+                pre_sal_budget_trg_tot = tot_balance_dict[month_st_dt].\
+                    get('pre_team_budget_trg_tot_bal', 0.0)
+
+                worksheet.write(row, col, round(sal_tot, 2),
+                                cell_right_bold_fmt)
+                row += 1
+                worksheet.write(row, col, round(sal_budget_trg_tot, 2),
+                                cell_right_bold_budget_fmt)
+                row -= 1
+                col += 1
+                worksheet.write(row, col, round(pre_sal_tot, 2),
+                                cell_right_bold_fmt)
+                row += 1
+                worksheet.write(row, col, round(pre_sal_budget_trg_tot, 2),
+                                cell_right_bold_budget_fmt)
+                row -= 1
+                col += 1
+
+                grand_tot_variance = 0.0
+                if pre_sal_tot > 0:
+                    grand_tot_variance = \
+                        (sal_tot - pre_sal_tot) / pre_sal_tot
+                worksheet.write(row, col,
+                                ustr(round(grand_tot_variance, 2)) + '%',
+                                cell_right_bold_fmt)
+
+                row += 1
+                worksheet.write(row, col, ' ', cell_right_bold_budget_fmt)
+                row -= 1
+                col += 1
+
         # ---------------------------------------------------------------
 
+        # print("\n tot_balance_dict ::::::::::::", tot_balance_dict)
         workbook.close()
         buf = base64.encodestring(open('/tmp/' + file_path, 'rb').read())
         try:
