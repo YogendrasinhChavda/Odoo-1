@@ -172,7 +172,8 @@ class WizSalesTeamTargetReport(models.TransientModel):
         cell_bg_cou_actual = workbook.add_format({
             'font_name': 'Arial',
             'bg_color': '#a9d18e',
-            'color': '#FFFFFF'
+            'color': '#FFFFFF',
+            'num_format': '#,##0.00'
         })
         cell_bg_cou_right_actual = workbook.add_format({
             'font_name': 'Arial',
@@ -215,6 +216,7 @@ class WizSalesTeamTargetReport(models.TransientModel):
         worksheet.set_row(row, 25)
         worksheet.write(row, col, "Country/State", cell_bg_fmt)
         tot_balance_dict = {}
+        # --------------------------TO Print Heading----------------------
         if dates:
             col += 1
             for month_st_dt in dates:
@@ -255,12 +257,31 @@ class WizSalesTeamTargetReport(models.TransientModel):
                     }})
                 row -= 1
                 col += 3
+            worksheet.set_row(row, 25)
+            worksheet.merge_range(row, col, row, col + 1,
+                                  ustr('Grand Total (YTM)'),
+                                  cell_center_fmt)
+            worksheet.write(row, col + 2, ' ', cell_center_fmt)
+            worksheet.set_column(row, col, 15)
+            fy_year = self.date_to.year
+            pre_fy_year = fy_year - 1
+            row += 1
+            worksheet.write(row, col, 'FY' + ustr(fy_year),
+                            cell_center_fmt)
+            worksheet.set_column(row, col + 1, 15)
+            worksheet.write(row, col + 1, 'FY' + ustr(pre_fy_year),
+                            cell_center_fmt)
+            worksheet.set_column(row, col + 2, 15)
+            worksheet.write(row, col + 2, 'Variance',
+                            cell_center_fmt)
+            row -= 1
+
         row += 1
         col = 0
         worksheet.write(row, col, " ", cell_bg_fmt)
         row += 1
 
-        # ---------------------------------------------------------------
+        # ------------TO Print Balances Country and team wise----------------
         inv_ids = inv_obj.search([
             ('date_invoice', '>=', self.date_from),
             ('date_invoice', '<=', self.date_to),
@@ -288,7 +309,7 @@ class WizSalesTeamTargetReport(models.TransientModel):
                 ('type', '=', 'out_invoice'),
                 ('company_id', '=', company),
                 ('state', 'in', ['open', 'in_payment', 'paid'])])
-            # sales_team_obj.search([('')])
+
             sale_team_ids = sale_country_ids.mapped('team_id')
             for team_id in sale_team_ids:
                 worksheet.set_row(row, 20)
@@ -304,6 +325,12 @@ class WizSalesTeamTargetReport(models.TransientModel):
                 # ----------------------------------------------------------
 
                 row_col = col + 1
+                grand_tot_country_team_wise_right = {
+                    'grand_total_country_team_wise': 0.0,
+                    'pre_grand_total_country_team_wise': 0.0,
+                    'grand_tot_budget_country_team_wise': 0.0,
+                    'pre_grand_tot_budget_country_team_wise': 0.0
+                }
                 for month_st_dt in dates:
                     month_days = \
                         monthrange(month_st_dt.year, month_st_dt.month)
@@ -404,6 +431,26 @@ class WizSalesTeamTargetReport(models.TransientModel):
                                     cell_right_color_fmt)
                     row_col += 1
 
+                    grand_tot_country_team_wise_right.update({
+                        'grand_total_country_team_wise':
+                        team_sales_total +
+                            grand_tot_country_team_wise_right[
+                                'grand_total_country_team_wise'],
+                        'pre_grand_total_country_team_wise':
+                        pre_team_sales_total +
+                            grand_tot_country_team_wise_right[
+                                'pre_grand_total_country_team_wise'],
+
+                        'grand_tot_budget_country_team_wise':
+                        team_sales_budget_trg_tot +
+                        grand_tot_country_team_wise_right[
+                            'grand_tot_budget_country_team_wise'],
+                        'pre_grand_tot_budget_country_team_wise':
+                            pre_team_sales_budget_trg_tot +
+                            grand_tot_country_team_wise_right[
+                            'pre_grand_tot_budget_country_team_wise'],
+                    })
+
                     if tot_balance_dict.get(month_st_dt, False):
                         if tot_balance_dict[month_st_dt].get(
                                 country_id.id, False):
@@ -445,8 +492,64 @@ class WizSalesTeamTargetReport(models.TransientModel):
                                     pre_team_sales_budget_trg_tot
                                 }
                             })
+                # ------ FY Wise Grand Total Team Wise ----------
+                fy_year_tot_grand = \
+                    grand_tot_country_team_wise_right[
+                        'grand_total_country_team_wise']
+                fy_year_tot_budget_grand = \
+                    grand_tot_country_team_wise_right[
+                        'grand_tot_budget_country_team_wise']
+                pre_fy_year_tot_grand = \
+                    grand_tot_country_team_wise_right[
+                        'pre_grand_total_country_team_wise']
+                pre_fy_year_tot_budget_grand = \
+                    grand_tot_country_team_wise_right[
+                        'pre_grand_tot_budget_country_team_wise']
+
+                grand_variance_per = 0.0
+                if pre_fy_year_tot_grand > 0:
+                    grand_variance_per = \
+                        (fy_year_tot_grand - pre_fy_year_tot_grand) / \
+                        pre_fy_year_tot_grand
+                    grand_variance_per = round(grand_variance_per, 2)
+
+                grand_budget_variance_per = 0.0
+                if fy_year_tot_budget_grand > 0:
+                    grand_budget_variance_per = \
+                        (fy_year_tot_grand -
+                         fy_year_tot_budget_grand) / \
+                        fy_year_tot_budget_grand
+                    grand_budget_variance_per = \
+                        round(grand_budget_variance_per, 2)
+
+                worksheet.write(row, row_col,
+                                round(fy_year_tot_grand, 2),
+                                cell_right_fmt)
+                worksheet.write(row + 1, row_col,
+                                round(fy_year_tot_budget_grand, 2),
+                                cell_right_color_fmt)
+                row_col += 1
+                worksheet.write(row, row_col,
+                                round(pre_fy_year_tot_grand, 2),
+                                cell_right_fmt)
+                worksheet.write(row + 1, row_col,
+                                round(pre_fy_year_tot_budget_grand, 2),
+                                cell_right_color_fmt)
+                row_col += 1
+                worksheet.write(row, row_col,
+                                ustr(grand_variance_per) + '%',
+                                cell_right_fmt)
+                worksheet.write(row + 1, row_col,
+                                ustr(grand_budget_variance_per) + '%',
+                                cell_right_color_fmt)
+
                 # We added 2 row plus because added Budget and actual team.
                 row += 2
+            # ---------------Total for top heading country wise ------------
+            grand_tot_country_wise_right = {
+                'grand_total_country_wise': 0.0,
+                'pre_grand_total_country_wise': 0.0
+            }
             for month_st_dt in dates:
                 if tot_balance_dict.get(month_st_dt, False) and \
                         tot_balance_dict[month_st_dt].\
@@ -457,6 +560,15 @@ class WizSalesTeamTargetReport(models.TransientModel):
                     pre_sale_tot = \
                         tot_balance_dict[month_st_dt][country_id.id].\
                         get('dt_prev_year_tot_bal', 0.0)
+
+                    grand_tot_country_wise_right.update({
+                        'grand_total_country_wise':
+                        sale_tot + grand_tot_country_wise_right[
+                            'grand_total_country_wise'],
+                        'pre_grand_total_country_wise':
+                        pre_sale_tot + grand_tot_country_wise_right[
+                            'pre_grand_total_country_wise']
+                    })
 
                     sale_budget_tot = \
                         tot_balance_dict[month_st_dt][country_id.id].\
@@ -519,13 +631,41 @@ class WizSalesTeamTargetReport(models.TransientModel):
                         })
 
                 col_for_tot_bal = col_for_tot_bal + 3
+            # --------- Total in Right side FY GRAND Year TOTAL -------------
+            fy_year_tot = \
+                grand_tot_country_wise_right['grand_total_country_wise']
+            pre_fy_year_tot = \
+                grand_tot_country_wise_right['pre_grand_total_country_wise']
+            worksheet.write(row_for_tot_bal, col_for_tot_bal + 1,
+                            round(fy_year_tot, 2),
+                            cell_bg_cou_actual)
+            worksheet.write(row_for_tot_bal, col_for_tot_bal + 2,
+                            round(pre_fy_year_tot, 2),
+                            cell_bg_cou_actual)
 
+            fy_year_variance = 0.0
+            if pre_fy_year_tot > 0:
+                fy_year_variance = \
+                    (fy_year_tot - pre_fy_year_tot) / pre_fy_year_tot
+
+            worksheet.write(row_for_tot_bal, col_for_tot_bal + 3,
+                            ustr(round(fy_year_variance, 2)) + '%',
+                            cell_bg_cou_right_actual)
+            # col_for_tot_bal = col_for_tot_bal + 3
+        # ----- TO Print Grand Total and Budget Total in bottom --------
         row += 1
         worksheet.write(row, col, "Grand Total", cell_left_bold_fmt)
         row += 1
         worksheet.write(row, col, "Budget Total", cell_left_bold_budget_fmt)
         row -= 1
         col += 1
+
+        grand_tot_fy_wise_right = {
+            'grand_total_fy_year_wise': 0.0,
+            'pre_grand_total_fy_year_wise': 0.0,
+            'grand_budget_total_fy_year_wise': 0.0,
+            'pre_grand_budget_total_fy_year_wise': 0.0
+        }
         for month_st_dt in dates:
             if tot_balance_dict.get(month_st_dt, False):
                 sal_tot = tot_balance_dict[month_st_dt].\
@@ -557,6 +697,7 @@ class WizSalesTeamTargetReport(models.TransientModel):
                 if pre_sal_tot > 0:
                     grand_tot_variance = \
                         (sal_tot - pre_sal_tot) / pre_sal_tot
+
                 worksheet.write(row, col,
                                 ustr(round(grand_tot_variance, 2)) + '%',
                                 cell_right_bold_fmt)
@@ -566,9 +707,107 @@ class WizSalesTeamTargetReport(models.TransientModel):
                 row -= 1
                 col += 1
 
+                # ==================================================
+                fy_year_surplus_per = 0.0
+                if sal_budget_trg_tot > 0:
+                    fy_year_surplus_per = (sal_tot / sal_budget_trg_tot) - 1
+
+                tot_balance_dict.get(month_st_dt, {}).update({
+                    'fy_year_surplus_per': fy_year_surplus_per
+                })
+                # ==================================================
+
+                grand_tot_fy_wise_right.update({
+                    'grand_total_fy_year_wise': sal_tot +
+                    grand_tot_fy_wise_right['grand_total_fy_year_wise'],
+                    'pre_grand_total_fy_year_wise': pre_sal_tot +
+                    grand_tot_fy_wise_right['pre_grand_total_fy_year_wise'],
+                    'grand_budget_total_fy_year_wise': sal_budget_trg_tot +
+                    grand_tot_fy_wise_right['grand_budget_total_fy_year_wise'],
+                    'pre_grand_budget_total_fy_year_wise':
+                        pre_sal_budget_trg_tot +
+                        grand_tot_fy_wise_right[
+                        'pre_grand_budget_total_fy_year_wise'],
+                })
+
+        # ---------------- Final Last 4 columns Grand totals --------
+        fy_year_surplus_per_final_dict = {
+            'fy_year_surplus': 0.0
+        }
+        fy_year_grand_tot_final = \
+            grand_tot_fy_wise_right['grand_total_fy_year_wise']
+        pre_fy_year_grand_tot_final = \
+            grand_tot_fy_wise_right['pre_grand_total_fy_year_wise']
+        fy_year_budget_grand_tot_final = \
+            grand_tot_fy_wise_right['grand_budget_total_fy_year_wise']
+        pre_fy_year_budget_grand_tot_final = \
+            grand_tot_fy_wise_right['pre_grand_budget_total_fy_year_wise']
+
+        worksheet.write(row, col, round(fy_year_grand_tot_final, 2),
+                        cell_right_bold_fmt)
+        row += 1
+        worksheet.write(row, col, round(fy_year_budget_grand_tot_final, 2),
+                        cell_right_bold_budget_fmt)
+        row -= 1
+        col += 1
+        worksheet.write(row, col, round(pre_fy_year_grand_tot_final, 2),
+                        cell_right_bold_fmt)
+        row += 1
+        worksheet.write(row, col, round(pre_fy_year_budget_grand_tot_final, 2),
+                        cell_right_bold_budget_fmt)
+        row -= 1
+        col += 1
+
+        fy_year_surplus = (fy_year_grand_tot_final /
+                           fy_year_budget_grand_tot_final) - 1
+        fy_year_surplus_per_final_dict.update({
+            'fy_year_surplus': fy_year_surplus
+        })
+
+        final_grand_tot_variance = 0.0
+        if pre_fy_year_grand_tot_final > 0:
+            final_grand_tot_variance = \
+                (fy_year_grand_tot_final - pre_fy_year_grand_tot_final) / \
+                pre_fy_year_grand_tot_final
+
+        worksheet.write(row, col,
+                        ustr(round(final_grand_tot_variance, 2)) + '%',
+                        cell_right_bold_fmt)
+
+        row += 1
+        worksheet.write(row, col, ' ', cell_right_bold_budget_fmt)
+
         # ---------------------------------------------------------------
 
-        # print("\n tot_balance_dict ::::::::::::", tot_balance_dict)
+        row += 2
+        col = 0
+
+        fy_year = self.date_to.year
+        surplus_str = 'Overall FY' + ustr(fy_year) + \
+            ' Budgert Deficit or Surplus %'
+        worksheet.write(row, col, surplus_str, cell_left_bold_budget_fmt)
+
+        col += 1
+        for month_st_dt in dates:
+            if tot_balance_dict.get(month_st_dt, False):
+                fy_year_surplus_per = \
+                    tot_balance_dict[month_st_dt].\
+                    get('fy_year_surplus_per', 0.0)
+                worksheet.write(row, col,
+                                ustr(round(fy_year_surplus_per, 2)) + '%',
+                                cell_right_bold_budget_fmt)
+                worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
+                worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
+                worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
+                col += 3
+
+        fy_year_surplus = fy_year_surplus_per_final_dict['fy_year_surplus']
+        worksheet.write(row, col,
+                        ustr(round(fy_year_surplus, 2)) + '%',
+                        cell_right_bold_budget_fmt)
+        worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
+        worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
+
         workbook.close()
         buf = base64.encodestring(open('/tmp/' + file_path, 'rb').read())
         try:
