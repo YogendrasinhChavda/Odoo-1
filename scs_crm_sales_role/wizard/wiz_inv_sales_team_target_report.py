@@ -796,17 +796,27 @@ class WizSalesTeamTargetReport(models.TransientModel):
                 worksheet.write(row, col,
                                 ustr(round(fy_year_surplus_per, 2)) + '%',
                                 cell_right_bold_budget_fmt)
-                worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
-                worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
-                worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
-                col += 3
+                col += 1
+                worksheet.write(row, col, ' ', cell_right_bold_budget_fmt)
+                col += 1
+                worksheet.write(row, col, ' ', cell_right_bold_budget_fmt)
+                col += 1
+                # worksheet.write(row, col, ' ', cell_right_bold_budget_fmt)
+                # col += 1
 
         fy_year_surplus = fy_year_surplus_per_final_dict['fy_year_surplus']
+        fy_year_surplus_msg = ''
+        if fy_year_surplus < 0.0:
+            fy_year_surplus_msg = \
+                ustr(abs(fy_year_surplus)) + '% behind this year budget'
         worksheet.write(row, col,
                         ustr(round(fy_year_surplus, 2)) + '%',
                         cell_right_bold_budget_fmt)
-        worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
-        worksheet.write(row, col + 1, ' ', cell_right_bold_budget_fmt)
+        col += 1
+        worksheet.write(row, col, fy_year_surplus_msg,
+                        cell_right_bold_budget_fmt)
+        col += 1
+        worksheet.write(row, col, ' ', cell_right_bold_budget_fmt)
 
         workbook.close()
         buf = base64.encodestring(open('/tmp/' + file_path, 'rb').read())
