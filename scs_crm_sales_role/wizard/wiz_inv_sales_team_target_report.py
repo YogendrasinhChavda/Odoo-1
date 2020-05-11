@@ -758,8 +758,10 @@ class WizSalesTeamTargetReport(models.TransientModel):
         row -= 1
         col += 1
 
-        fy_year_surplus = (fy_year_grand_tot_final /
-                           fy_year_budget_grand_tot_final) - 1
+        fy_year_surplus = 0.0
+        if fy_year_budget_grand_tot_final > 0.0:
+            fy_year_surplus = (fy_year_grand_tot_final /
+                               fy_year_budget_grand_tot_final) - 1
         fy_year_surplus_per_final_dict.update({
             'fy_year_surplus': fy_year_surplus
         })
