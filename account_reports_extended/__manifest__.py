@@ -18,8 +18,9 @@
 
     # Views
     'data': [
-        'wizard/wiz_bank_reconciliation_report_view.xml',
         'data/account_financial_report_data.xml',
+        'views/account_view.xml',
+        'wizard/wiz_bank_reconciliation_report_view.xml',
         # 'views/followup_view.xml',
     ],
 

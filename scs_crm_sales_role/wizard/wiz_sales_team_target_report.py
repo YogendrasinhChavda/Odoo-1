@@ -4,8 +4,9 @@ import xlsxwriter
 import os
 import base64
 from datetime import datetime
-# from calendar import monthrange
+from calendar import monthrange
 # from dateutil.relativedelta import relativedelta
+from dateutil.rrule import rrule, MONTHLY
 
 from odoo import models, fields, api, _
 from odoo.exceptions import Warning
@@ -76,15 +77,22 @@ class WizSalesTeamTargetReport(models.TransientModel):
     @api.multi
     def export_sales_team_target_report(self):
         """Method to generate the Sales Team target report."""
-        sales_team_obj = self.env['crm.team']
+        # sales_team_obj = self.env['crm.team']
+        # state_obj = self.env['res.country.state']
         country_obj = self.env['res.country']
-        state_obj = self.env['res.country.state']
         sale_obj = self.env['sale.order']
         wiz_exported_obj = self.env['wiz.sales.team.target.report.exported']
+        trg_team_obj = self.env['sales.billed.invoice.target.team']
 
         if self.date_from > self.date_to:
             raise Warning(_("To date must be greater than \
                 or Equals to from date !!"))
+
+        company = self.company_id and self.company_id.id or False
+        # Below is the list of dates month wise.
+        dates = [dt for dt in rrule(MONTHLY,
+                                    dtstart=self.date_from,
+                                    until=self.date_to)]
 
         file_path = 'YTM Sales Team Report.xlsx'
         workbook = xlsxwriter.Workbook('/tmp/' + file_path)
@@ -93,30 +101,53 @@ class WizSalesTeamTargetReport(models.TransientModel):
         cell_font_fmt = workbook.add_format({
             'font_name': 'Arial',
         })
-        # cell_center_fmt = workbook.add_format({
-        #     'font_name': 'Arial',
-        #     'align': 'center',
-        # })
         cell_left_fmt = workbook.add_format({
             'font_name': 'Arial',
             'align': 'left',
+        })
+        cell_center_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'center',
+            'bg_color': '#548235',
+            'color': '#FFFFFF'
         })
         cell_left_color_fmt = workbook.add_format({
             'font_name': 'Arial',
             'align': 'left',
             'color': '#0070C0'
         })
+        cell_right_color_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'right',
+            'color': '#0070C0',
+            'num_format': '#,##0.00'
+        })
+        cell_right_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'right',
+            'num_format': '#,##0.00'
+        })
         cell_bg_fmt = workbook.add_format({
             'font_name': 'Arial',
-            'bg_color': '#548235'
+            'bg_color': '#548235',
+            'color': '#FFFFFF'
         })
-        cell_bg_fmt1 = workbook.add_format({
+        cell_bg_cou_actual = workbook.add_format({
             'font_name': 'Arial',
-            'bg_color': '#a9d18e'
+            'bg_color': '#a9d18e',
+            'color': '#FFFFFF'
+        })
+        cell_bg_cou_right_actual = workbook.add_format({
+            'font_name': 'Arial',
+            'bg_color': '#a9d18e',
+            'align': 'right',
+            'color': '#FFFFFF',
+            'num_format': '#,##0.00'
         })
 
         worksheet.set_column(0, 0, 35)
         worksheet.freeze_panes(0, 1)
+        worksheet.freeze_panes(5, 1)
 
         current_date = datetime.now()
         month_str = current_date.strftime('%b')
@@ -129,8 +160,51 @@ class WizSalesTeamTargetReport(models.TransientModel):
         worksheet.write(row, col, "Sum of Sales  (Net of Tax) Incl freight",
                         cell_font_fmt)
         row += 1
+        worksheet.set_row(row, 25)
         worksheet.write(row, col, "Country/State", cell_bg_fmt)
+        tot_balance_dict = {}
+        if dates:
+            col += 1
+            for month_st_dt in dates:
+                month_str = month_st_dt.strftime("%B")
+                dt_year = month_st_dt.year
+                dt_prev_year = dt_year - 1
+                worksheet.merge_range(row, col, row, col + 1,
+                                      ustr(month_str), cell_center_fmt)
+                # below one line is just fill the color for blank cell
+                worksheet.set_row(row, 25)
+                worksheet.write(row, col + 2, ' ', cell_center_fmt)
+                row += 1
+                # Below three lines will update years and month heading.
+                worksheet.set_column(row, col, 15)
+                worksheet.write(row, col, ustr(dt_year), cell_center_fmt)
+                worksheet.set_column(row, col + 1, 15)
+                worksheet.write(row, col + 1, ustr(dt_prev_year),
+                                cell_center_fmt)
+                worksheet.set_column(row, col + 2, 15)
+                worksheet.set_row(row, 25)
+                worksheet.write(row, col + 2, 'Variance', cell_center_fmt)
+
+                if tot_balance_dict.get(month_st_dt, False):
+                    tot_balance_dict[month_st_dt].update({
+                        'month_str': month_str,
+                        'dt_year': ustr(dt_year),
+                        'dt_prev_year': ustr(dt_prev_year),
+                        # 'dt_year_tot_bal': 0.0,
+                        # 'dt_prev_year_tot_bal': 0.0
+                    })
+                else:
+                    tot_balance_dict.update({month_st_dt: {
+                        'month_str': month_str,
+                        'dt_year': ustr(dt_year),
+                        'dt_prev_year': ustr(dt_prev_year),
+                        # 'dt_year_tot_bal': 0.0,
+                        # 'dt_prev_year_tot_bal': 0.0
+                    }})
+                row -= 1
+                col += 3
         row += 1
+        col = 0
         worksheet.write(row, col, " ", cell_bg_fmt)
         row += 1
 
@@ -138,35 +212,191 @@ class WizSalesTeamTargetReport(models.TransientModel):
         sale_ids = sale_obj.search([
             ('confirmation_date', '>=', self.date_from),
             ('confirmation_date', '<=', self.date_to),
+            ('company_id', '=', company),
             ('state', 'in', ['sale', 'done'])])
 
-        print("\n sale_ids::::::1::::::::", sale_ids)
-        partner_ids = sale_ids.mapped('partner_id')
+        # partner_ids = sale_ids.mapped('partner_id')
         # team_ids = sale_ids.mapped('team_id')
         country_ids = sale_ids.mapped('partner_id').mapped('country_id')
-        state_ids = sale_ids.mapped('partner_id').mapped('state_id')
-        print("\n partner_ids::::::2::::::::", partner_ids)
-        print("\n country_ids::::::3::::::::", country_ids)
-        print("\n state_ids::::::4::::::::", state_ids)
+        # state_ids = sale_ids.mapped('partner_id').mapped('state_id')
         for country_id in country_obj.search([
                 ('id', 'in', country_ids.ids)], order="name"):
+            worksheet.set_row(row, 25)
+            # worksheet.set_default_row(20)
+            row_for_tot_bal = row
+            col_for_tot_bal = col
             worksheet.write(row, col,
-                            country_id.name + " Actual", cell_bg_fmt1)
+                            country_id.name + " Actual", cell_bg_cou_actual)
             row += 1
             sale_country_ids = sale_obj.search([
                 ('confirmation_date', '>=', self.date_from),
                 ('confirmation_date', '<=', self.date_to),
                 ('partner_id.country_id', '=', country_id.id),
+                ('company_id', '=', company),
                 ('state', 'in', ['sale', 'done'])])
             # sales_team_obj.search([('')])
             sale_team_ids = sale_country_ids.mapped('team_id')
             for team_id in sale_team_ids:
+                worksheet.set_row(row, 20)
                 worksheet.write(row, col,
                                 team_id.name + " Actual", cell_left_fmt)
+                # ----------------------------------------------------------
+                # Added Budget Team in file.
                 row += 1
+                worksheet.set_row(row, 20)
                 worksheet.write(row, col,
                                 team_id.name + " Budget", cell_left_color_fmt)
-                row += 1
+                row -= 1
+                # ----------------------------------------------------------
+
+                row_col = col + 1
+                for month_st_dt in dates:
+                    month_days = \
+                        monthrange(month_st_dt.year, month_st_dt.month)
+                    month_en_dt = month_st_dt
+                    month_en_dt = month_en_dt.\
+                        replace(day=int(month_days[1]))
+
+                    # month_str = month_st_dt.strftime("%B")
+                    dt_year = month_st_dt.year
+                    dt_prev_year = dt_year - 1
+                    prev_year_month_st_dt = month_st_dt
+
+                    pre_month_days = monthrange(dt_prev_year,
+                                                prev_year_month_st_dt.month)
+                    prev_year_month_en_dt = month_en_dt
+
+                    prev_year_month_st_dt = prev_year_month_st_dt.\
+                        replace(year=int(dt_prev_year))
+                    prev_year_month_en_dt = prev_year_month_en_dt.\
+                        replace(day=int(pre_month_days[1]),
+                                year=int(dt_prev_year))
+
+                    month_en_dt = month_en_dt.strftime("%Y-%m-%d 23:59:59")
+                    prev_year_month_en_dt = \
+                        prev_year_month_en_dt.strftime("%Y-%m-%d 23:59:59")
+
+                    sale_team_country_wise_ids = sale_obj.search([
+                        ('confirmation_date', '>=', month_st_dt),
+                        ('confirmation_date', '<=', month_en_dt),
+                        ('partner_id.country_id', '=', country_id.id),
+                        ('team_id', '=', team_id.id),
+                        ('company_id', '=', company),
+                        ('state', 'in', ['sale', 'done'])])
+                    team_sales_total = \
+                        sum(sale_team_country_wise_ids.mapped('amount_total'))
+
+                    sale_trg_budget_ids = trg_team_obj.search([
+                        ('date_from', '>=', month_st_dt),
+                        ('date_to', '<=', month_en_dt),
+                        ('team_id', '=', team_id.id),
+                        ('company_id', '=', company)])
+                    team_sales_budget_trg_tot = \
+                        sum(sale_trg_budget_ids.mapped('sales_team_target'))
+
+                    worksheet.write(row, row_col, round(team_sales_total, 2),
+                                    cell_right_fmt)
+                    worksheet.write(row + 1, row_col,
+                                    round(team_sales_budget_trg_tot, 2),
+                                    cell_right_color_fmt)
+                    pre_sale_team_country_ids = sale_obj.search([
+                        ('confirmation_date', '>=', prev_year_month_st_dt),
+                        ('confirmation_date', '<=', prev_year_month_en_dt),
+                        ('partner_id.country_id', '=', country_id.id),
+                        ('team_id', '=', team_id.id),
+                        ('company_id', '=', company),
+                        ('state', 'in', ['sale', 'done'])])
+                    pre_team_sales_total = \
+                        sum(pre_sale_team_country_ids.mapped('amount_total'))
+
+                    pre_sale_trg_budget_ids = trg_team_obj.search([
+                        ('date_from', '>=', prev_year_month_st_dt),
+                        ('date_to', '<=', prev_year_month_en_dt),
+                        ('team_id', '=', team_id.id),
+                        ('company_id', '=', company)])
+                    pre_team_sales_budget_trg_tot = \
+                        sum(pre_sale_trg_budget_ids.
+                            mapped('sales_team_target'))
+
+                    row_col += 1
+                    worksheet.write(row, row_col,
+                                    round(pre_team_sales_total, 2),
+                                    cell_right_fmt)
+                    worksheet.write(row + 1, row_col,
+                                    round(pre_team_sales_budget_trg_tot, 2),
+                                    cell_right_color_fmt)
+                    variance_per = 0.0
+                    if pre_team_sales_total > 0:
+                        variance_per = \
+                            (team_sales_total - pre_team_sales_total) / \
+                            pre_team_sales_total
+                        variance_per = round(variance_per, 2)
+
+                    budget_variance_per = 0.0
+                    if team_sales_budget_trg_tot > 0:
+                        budget_variance_per = \
+                            (team_sales_total -
+                             team_sales_budget_trg_tot) / \
+                            team_sales_budget_trg_tot
+                        budget_variance_per = round(budget_variance_per, 2)
+
+                    row_col += 1
+                    worksheet.write(row, row_col,
+                                    ustr(variance_per) + '%', cell_right_fmt)
+                    worksheet.write(row + 1, row_col,
+                                    ustr(budget_variance_per) + '%',
+                                    cell_right_color_fmt)
+                    row_col += 1
+
+                    if tot_balance_dict.get(month_st_dt, False):
+                        if tot_balance_dict[month_st_dt].get(
+                                country_id.id, False):
+                            tot_balance_dict[month_st_dt][country_id.id].\
+                                update({
+                                    'dt_year_tot_bal':
+                                    tot_balance_dict[month_st_dt]
+                                    [country_id.id]['dt_year_tot_bal'] +
+                                    team_sales_total,
+                                    'dt_prev_year_tot_bal':
+                                    tot_balance_dict[month_st_dt]
+                                    [country_id.id]
+                                    ['dt_prev_year_tot_bal'] +
+                                    pre_team_sales_total,
+                                })
+                        else:
+                            tot_balance_dict[month_st_dt].update({
+                                country_id.id: {
+                                    'dt_year_tot_bal': team_sales_total,
+                                    'dt_prev_year_tot_bal':
+                                    pre_team_sales_total,
+                                }
+                            })
+                # We added 2 row plus because added Budget and actual team.
+                row += 2
+            for month_st_dt in dates:
+                if tot_balance_dict.get(month_st_dt, False) and \
+                        tot_balance_dict[month_st_dt].\
+                        get(country_id.id, False):
+                    sale_tot = \
+                        tot_balance_dict[month_st_dt][country_id.id].\
+                        get('dt_year_tot_bal', 0.0)
+                    pre_sale_tot = \
+                        tot_balance_dict[month_st_dt][country_id.id].\
+                        get('dt_prev_year_tot_bal', 0.0)
+                    worksheet.write(row_for_tot_bal, col_for_tot_bal + 1,
+                                    round(sale_tot, 2),
+                                    cell_bg_cou_actual)
+                    worksheet.write(row_for_tot_bal, col_for_tot_bal + 2,
+                                    round(pre_sale_tot, 2),
+                                    cell_bg_cou_actual)
+                    tot_variance = 0.0
+                    if pre_sale_tot > 0:
+                        tot_variance = \
+                            (sale_tot - pre_sale_tot) / pre_sale_tot
+                    worksheet.write(row_for_tot_bal, col_for_tot_bal + 3,
+                                    ustr(round(tot_variance, 2)) + '%',
+                                    cell_bg_cou_right_actual)
+                col_for_tot_bal = col_for_tot_bal + 3
         # ---------------------------------------------------------------
 
         workbook.close()
