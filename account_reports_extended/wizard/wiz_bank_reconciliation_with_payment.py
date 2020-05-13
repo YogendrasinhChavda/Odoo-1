@@ -217,7 +217,7 @@ class WizBankReconciliationReport(models.TransientModel):
             last_reconcile_date_str = ''
             last_reconcile_date = ''
             # last_reconcile_amount = 0.0
-            curr_bal = bank_st_id and bank_st_id.balance_end or 0.0
+            # curr_bal = bank_st_id and bank_st_id.balance_end or 0.0
             last_reconcile_bal = last_bank_st_id and \
                 last_bank_st_id.balance_end or 0.0
             if last_bank_st_id:
@@ -241,7 +241,7 @@ class WizBankReconciliationReport(models.TransientModel):
                 ('statement_id.journal_id', '=', journal.id),
                 ('statement_id.company_id', '=', company.id),
                 ('journal_entry_ids', '!=', False),
-                ('amount', '>', 0.0)
+                # ('amount', '>', 0.0)
                 # ('state', '=', 'confirm')
             ])
             # tot_reconcile_cust_lines = \
@@ -253,7 +253,7 @@ class WizBankReconciliationReport(models.TransientModel):
                 ('statement_id.journal_id', '=', journal.id),
                 ('statement_id.company_id', '=', company.id),
                 ('journal_entry_ids', '!=', False),
-                ('amount', '<', 0.0)
+                # ('amount', '<', 0.0)
                 # ('state', '=', 'confirm')
             ])
             # tot_reconcile_vend_lines = \
@@ -268,8 +268,8 @@ class WizBankReconciliationReport(models.TransientModel):
                 # ('amount', '>', 0.0)
                 # ('state', '=', 'confirm')
             ])
-            # tot_unreconcile_cust_lines = \
-            #     sum(unreconcile_cust_bnk_st_lines.mapped('amount'))
+            tot_unreconcile_cust_lines = \
+                sum(unreconcile_cust_bnk_st_lines.mapped('amount'))
 
             # unreconcile_vend_bnk_st_lines = bank_st_l_obj.search([
             #     # ('date', '=', self.bnk_st_date.sudo().date),
@@ -338,9 +338,13 @@ class WizBankReconciliationReport(models.TransientModel):
                 move_lines = move_l_obj.search([
                     ('statement_line_id', '=', cust_pay_line.id),
                     ('payment_id', '!=', False),
-                    ('balance', '>=', 0.0)])
+                    ('payment_id.payment_type', '=', 'inbound'),
+                    # ('credit', '>', 0.0),
+                    ('balance', '>=', 0.0)
+                ])
                 for move_l in move_lines:
                     balance = move_l.balance or 0.0
+                    # balance = move_l.credit or 0.0
                     tot_cust_payment = tot_cust_payment + balance or 0.0
                     payment_date = ''
                     if move_l.date:
@@ -348,7 +352,8 @@ class WizBankReconciliationReport(models.TransientModel):
                             move_l.date, '%d-%m-%Y')
 
                     payment = move_l.payment_id or False
-                    name = payment and payment.name or ''
+                    name = payment and payment.partner_id and \
+                        payment.partner_id.name or ''
                     pay_no = payment and payment.name or ''
                     pay_reference = payment and payment.payment_reference or ''
                     pay_memo = payment and payment.communication or ''
@@ -413,7 +418,10 @@ class WizBankReconciliationReport(models.TransientModel):
                 move_lines = move_l_obj.search([
                     ('statement_line_id', '=', vend_pay_line.id),
                     ('payment_id', '!=', False),
-                    ('balance', '<=', 0.0)])
+                    ('payment_id.payment_type', '=', 'outbound'),
+                    # ('debit', '>', 0.0)
+                    ('balance', '<=', 0.0)
+                ])
                 for move_l in move_lines:
                     balance = move_l.balance or 0.0
                     tot_vend_payment = tot_vend_payment + balance or 0.0
@@ -422,7 +430,8 @@ class WizBankReconciliationReport(models.TransientModel):
                         payment_date = datetime.strftime(
                             move_l.date, '%d-%m-%Y')
                     payment = move_l.payment_id or False
-                    name = payment and payment.name or ''
+                    name = payment and payment.partner_id and \
+                        payment.partner_id.name or ''
                     pay_no = payment and payment.name or ''
                     pay_reference = payment and payment.payment_reference or ''
                     pay_memo = payment and payment.communication or ''
@@ -499,7 +508,10 @@ class WizBankReconciliationReport(models.TransientModel):
                 row, 0, row, 3,
                 'Reconcile Statement Balance - ' + ustr(from_date),
                 header_cell_l_fmat)
-            worksheet.write(row, 5, round(curr_bal, 2), cell_r_bold_noborder)
+            re_st_bal_tot = filter_bal + last_reconcile_bal
+            # worksheet.write(row, 5, round(curr_bal, 2), cell_r_bold_noborder)
+            worksheet.write(row, 5, round(re_st_bal_tot, 2),
+                            cell_r_bold_noborder)
             row += 1
             worksheet.merge_range(
                 row, 0, row, 3, 'Difference', header_cell_l_fmat)
@@ -507,12 +519,13 @@ class WizBankReconciliationReport(models.TransientModel):
             row += 1
             worksheet.merge_range(row, 0, row, 3, 'Unreconciled',
                                   header_cell_l_fmat)
-            worksheet.write(row, 5, 0.0, cell_r_bold_noborder)
+            worksheet.write(row, 5, round(tot_unreconcile_cust_lines, 2),
+                            cell_r_bold_noborder)
             row += 1
             worksheet.merge_range(row, 0, row, 3,
                                   'Uncleared  Checks and Payments',
                                   header_cell_l_fmat)
-            worksheet.write(row, 5, 0.0, cell_r_bold_noborder)
+            # worksheet.write(row, 5, 0.0, cell_r_bold_noborder)
 
             col = 0
             row += 1
@@ -585,7 +598,9 @@ class WizBankReconciliationReport(models.TransientModel):
             worksheet.merge_range(row, 0, row, 3,
                                   'Total as of ' + ustr(from_date),
                                   header_cell_l_fmat)
-            worksheet.write(row, 5, round(curr_bal, 2), cell_r_bold_noborder)
+            # worksheet.write(row, 5, round(curr_bal, 2), cell_r_bold_noborder)
+            worksheet.write(row, 5, round(re_st_bal_tot, 2),
+                            cell_r_bold_noborder)
 
         workbook.close()
         buf = base64.encodestring(open('/tmp/' + file_path, 'rb').read())
