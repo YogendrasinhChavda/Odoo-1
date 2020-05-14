@@ -347,11 +347,11 @@ class WizBankReconciliationReport(models.TransientModel):
                     # balance = move_l.credit or 0.0
                     tot_cust_payment = tot_cust_payment + balance or 0.0
                     payment_date = ''
-                    if move_l.date:
+                    if move_l and move_l.date:
                         payment_date = datetime.strftime(
                             move_l.date, '%d-%m-%Y')
 
-                    payment = move_l.payment_id or False
+                    payment = move_l and move_l.payment_id or False
                     name = payment and payment.partner_id and \
                         payment.partner_id.name or ''
                     pay_no = payment and payment.name or ''
@@ -362,11 +362,14 @@ class WizBankReconciliationReport(models.TransientModel):
                     pay_method = payment and payment.batch_payment_id and \
                         payment.batch_payment_id.payment_method_id and \
                         payment.batch_payment_id.payment_method_id.name or ''
+                    jou_entry_ref = move_l and move_l.move_id and \
+                        move_l.move_id.name or ''
                     partner = "Partner Name : " + name + '\n'
                     partner += "Batch Payment Number : " + batch_pay_no + '\n'
                     partner += "Payment Method : " + pay_method + '\n'
                     partner += "Payment Number : " + pay_no + '\n'
                     partner += "Payment Reference : " + pay_reference + '\n'
+                    partner += "Journal Entry Number : " + jou_entry_ref + '\n'
                     partner += "Invoice Reference : " + pay_memo + '\n'
 
                     cust_pay_memo = cust_pay_line.name or ''
@@ -388,7 +391,7 @@ class WizBankReconciliationReport(models.TransientModel):
                     #            PARTNER_TYPE.get(cust_pay.partner_type, ''),
                     #            cell_l_fmat)
                     # col += 1
-                    worksheet.set_row(row, 80)
+                    worksheet.set_row(row, 90)
                     worksheet.write(row, col, partner, cell_l_fmat)
                     col += 1
                     worksheet.write(row, col, cust_pay_memo or '', cell_l_fmat)
@@ -418,18 +421,19 @@ class WizBankReconciliationReport(models.TransientModel):
                 move_lines = move_l_obj.search([
                     ('statement_line_id', '=', vend_pay_line.id),
                     ('payment_id', '!=', False),
-                    ('payment_id.payment_type', '=', 'outbound'),
+                    ('payment_id.payment_type', 'in',
+                        ['outbound', 'transfer']),
                     # ('debit', '>', 0.0)
                     ('balance', '<=', 0.0)
                 ])
                 for move_l in move_lines:
-                    balance = move_l.balance or 0.0
+                    balance = move_l and move_l.balance or 0.0
                     tot_vend_payment = tot_vend_payment + balance or 0.0
                     payment_date = ''
-                    if move_l.date:
+                    if move_l and move_l.date:
                         payment_date = datetime.strftime(
                             move_l.date, '%d-%m-%Y')
-                    payment = move_l.payment_id or False
+                    payment = move_l and move_l.payment_id or False
                     name = payment and payment.partner_id and \
                         payment.partner_id.name or ''
                     pay_no = payment and payment.name or ''
@@ -440,11 +444,14 @@ class WizBankReconciliationReport(models.TransientModel):
                     pay_method = payment and payment.batch_payment_id and \
                         payment.batch_payment_id.payment_method_id and \
                         payment.batch_payment_id.payment_method_id.name or ''
+                    jou_entry_ref = move_l and move_l.move_id and \
+                        move_l.move_id.name or ''
                     partner = "Partner Name : " + name + '\n'
                     partner += "Batch Payment Number : " + batch_pay_no + '\n'
                     partner += "Payment Method : " + pay_method + '\n'
                     partner += "Payment Number : " + pay_no + '\n'
                     partner += "Payment Reference : " + pay_reference + '\n'
+                    partner += "Journal Entry Number : " + jou_entry_ref + '\n'
                     partner += "Invoice Reference : " + pay_memo + '\n'
 
                     vend_pay_memo = move_l.name or ''
@@ -466,7 +473,7 @@ class WizBankReconciliationReport(models.TransientModel):
                     #             PARTNER_TYPE.get(ven_pay.partner_type, ''),
                     #             cell_l_fmat)
                     # col += 1
-                    worksheet.set_row(row, 80)
+                    worksheet.set_row(row, 90)
                     worksheet.write(row, col, partner, cell_l_fmat)
                     col += 1
                     worksheet.write(row, col, vend_pay_memo or '', cell_l_fmat)
