@@ -30,6 +30,7 @@
         "report/top_most_sale_invoice_report_view.xml",
         "report/top_most_sale_invoice_product_report_view.xml",
         "wizard/wiz_sales_team_target_report_view.xml",
+        "wizard/wiz_non_parent_child_report_view.xml",
     ],
 
     # Techical

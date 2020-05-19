@@ -15,6 +15,17 @@ class ResUsers(models.Model):
                                               string="Sales Person Invoices")
 
 
+class ResPartner(models.Model):
+    """Res Partner Model."""
+
+    _inherit = "res.partner"
+
+    member_no = fields.Char(string="Member No.")
+    # Moved Below fields here from studio custom
+    x_studio_plumber_1 = fields.Boolean(string="Plumber")
+    x_studio_plumber = fields.Boolean(string="Plumber")
+
+
 class CrmTeam(models.Model):
     """CRM Team Model."""
 

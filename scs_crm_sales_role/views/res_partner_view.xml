@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Inherited Res Partner Form view to add team_id -->
+        <!-- Inherited Res Partner Form view to add team_id and other info. -->
         <record id="view_view_partner_form_team_inherit" model="ir.ui.view">
             <field name="name">view.res.partner.form.crm.team.inherit</field>
             <field name="model">res.partner</field>
@@ -14,6 +14,12 @@
                 <xpath expr="//field[@name='user_id']" position="after">
                     <field name="team_id" placeholder="Sales Team"/>
                 </xpath>
+                <xpath expr="//field[@name='vat']" position="after">
+                    <field name="member_no" placeholder="Enter Member Number..."/>
+                </xpath>
+         <!--        <xpath expr="//group[@name='purchase']/field[@name='supplier']" position="after">
+                    <field name="x_studio_plumber_1"/>
+                </xpath> -->
             </field>
         </record>
     </data>
