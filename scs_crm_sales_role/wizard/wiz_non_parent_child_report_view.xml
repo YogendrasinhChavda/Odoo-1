@@ -1,0 +1,61 @@
+<odoo>
+    <!-- Form View of Wizard Non Parent Child Report Exported -->
+    <record id="wiz_non_parent_child_report_exported_form" model="ir.ui.view">
+        <field name="name">wiz.non.parent.child.report.exported.form</field>
+        <field name="model">wiz.non.parent.child.report.exported</field>
+        <field name="arch" type="xml">
+            <form string="Export File">
+                <group>
+                    <field name="name" invisible="1" />
+                    <h4>
+                        Click On Link To Download Xls File: &#160;
+                        <field name="file" filename="name" nolabel="1" />
+                    </h4>
+                </group>
+                <footer>
+                    <button string="Close" class="oe_highlight" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Form View of Wizard Non Parent Child Report -->
+    <record id="wiz_non_parent_child_report_form" model="ir.ui.view">
+        <field name="name">wiz.non.parent.child.report.form</field>
+        <field name="model">wiz.non.parent.child.report</field>
+        <field name="arch" type="xml">
+            <form string="Non-Parent Child Report">
+                <group>
+                    <field name="company_id" required="1"/>
+                    <field name="date_from" required="1"
+                        context="{'from_wiz_form_view': True}"/>
+                    <field name="date_to" required="1"/>
+                </group>
+                <footer>
+                    <button name="export_sales_team_target_report"
+                        class="btn btn-primary"
+                        string="Export File" type="object"/>
+                    <button string="Cancel" class="btn btn-default" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action View of Wizard Non Parent Child Report -->
+    <record id="action_wiz_non_parent_child_report" model="ir.actions.act_window">
+        <field name="name">Non-Parent Child Report</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">wiz.non.parent.child.report</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Menuitem of Wizard Non Parent Child Report -->
+    <menuitem
+        id="menu_wiz_non_parent_child_report"
+        name="Non-Parent Child Reports"
+        action="action_wiz_non_parent_child_report"
+        parent="scs_crm_sales_role.menu_management_reports"
+        sequence="7"/>
+</odoo>
