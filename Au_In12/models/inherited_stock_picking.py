@@ -28,7 +28,6 @@ class Picking(models.Model):
         work_order_id = self.env['account.invoice'].search(
             [('picking_id', '=', self.id)])
         inv_ids = []
-
         for inv_id in work_order_id:
             inv_ids.append(inv_id.id)
             result = mod_obj.get_object_reference(
@@ -55,7 +54,6 @@ class Picking(models.Model):
                     'partner_id': self.partner_id.id,
                     'picking_id': self.id
                 }
-
                 res = account_inv_obj.create(vals)
                 res.purchase_order_change()
                 res.compute_taxes()
@@ -68,7 +66,7 @@ class Picking(models.Model):
                 inv_obj = self.env['account.invoice']
                 sale_order_line_obj = self.env['account.invoice.line']
                 sale_order = self.env['sale.order'].search([
-                    ('name', '=', self.origin)])
+                    ('name', '=', self.origin)], limit=1)
                 if sale_order:
                     bank_acc = inv_obj._get_default_bank_id(
                         'out_invoice',
@@ -83,6 +81,9 @@ class Picking(models.Model):
                         self.partner_id.property_account_receivable_id and
                         self.partner_id.property_account_receivable_id.id,
                         'partner_id': self.partner_id.id,
+                        'partner_shipping_id':
+                        sale_order.partner_shipping_id and
+                        sale_order.partner_shipping_id.id or False,
                         'currency_id': sale_order.pricelist_id.currency_id.id,
                         'payment_term_id': sale_order.payment_term_id.id,
                         'fiscal_position_id': sale_order.fiscal_position_id and
@@ -91,9 +92,10 @@ class Picking(models.Model):
                         sale_order.partner_id.property_account_position_id.id,
                         'team_id': sale_order.team_id.id,
                         'comment': sale_order.note,
-                        'partner_bank_id': bank_acc and bank_acc.id or False
+                        'partner_bank_id': bank_acc and bank_acc.id or False,
+                        'date_invoice': fields.Datetime.now().date()
                     })
-                    invoice.date_invoice = fields.Datetime.now().date()
+                    # invoice.date_invoice = fields.Datetime.now().date()
                     for sale_line in self.move_lines:
                         if sale_line.product_id.property_account_income_id:
                             account = sale_line.product_id and \
