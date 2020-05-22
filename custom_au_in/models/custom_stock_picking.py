@@ -105,44 +105,52 @@ class StockPicking(models.Model):
 
     @api.multi
     def action_done(self):
-        if self.sale_id.carrier_id:
+        if self.sale_id and self.sale_id.carrier_id:
             if not self.env['sale.order.line'].search_count([
                     ('order_id', 'in', self.ids),
                     ('is_delivery', '=', True)]):
                 self.sale_id.delivery_rating_success = False
                 res = self.sale_id.carrier_id.rate_shipment(self.sale_id)
-                if res['success']:
-                    self.sale_id.delivery_rating_success = True
-                    self.sale_id.delivery_price = res['price']
-                    self.carrier_price = res['price']
-                    self.sale_id.delivery_message = res['warning_message']
+                if res.get('success', False):
+                    self.sale_id.write({
+                        'delivery_rating_success': True,
+                        'delivery_price': res and res.get('price', 0.0),
+                        'delivery_message': res and
+                        res.get('warning_message', 0.0),
+                    })
+                    self.carrier_price = res.get('price', 0.0)
                 else:
-                    self.sale_id.delivery_rating_success = False
-                    self.sale_id.delivery_price = 0.0
-                    self.sale_id.delivery_message = res['error_message']
+                    self.sale_id.write({
+                        'delivery_rating_success': False,
+                        'delivery_price': 0.0,
+                        'delivery_message': res and
+                        res.get('error_message', 0.0),
+                    })
                 self._add_delivery_cost_to_so()
                 self.sale_id.invoice_shipping_on_delivery = False
         res = super(StockPicking, self).action_done()
-        account_invoice_obj = self.env['account.invoice'].search([
+        acc_inv_rec = self.env['account.invoice'].search([
             ('sale_id', '=', self.origin)], limit=1)
         sale_order = self.env['sale.order'].search([
-            ('name', '=', self.origin)])
+            ('name', '=', self.origin)], limit=1)
         inv_line_obj = self.env['account.invoice.line']
         flag = 0
-        if sale_order:
+        if sale_order and acc_inv_rec:
             account = self.get_account_properties()
-            account_invoice_obj.write({'user_id': sale_order.user_id.id})
-            account_invoice_obj.write({'name': sale_order.client_order_ref})
-            today_date = fields.Date.context_today(self)
-            account_invoice_obj.write({'date_invoice': today_date})
-            for inv_lines in account_invoice_obj.invoice_line_ids:
+            acc_inv_rec.write({
+                'user_id': sale_order.user_id and
+                sale_order.user_id.id or False,
+                'name': sale_order.client_order_ref,
+                'date_invoice': fields.Date.context_today(self)
+            })
+            for inv_lines in acc_inv_rec.invoice_line_ids:
                 inv_lines.unlink()
             for sale_line in sale_order.order_line:
                 if sale_line.product_id.product_tmpl_id.bom_ids:
                     invoice_line_id = inv_line_obj.create({
                         'name': sale_line.name,
                         'account_id': account.id,
-                        'invoice_id': account_invoice_obj.id,
+                        'invoice_id': acc_inv_rec and acc_inv_rec.id,
                         'price_unit': sale_line.price_unit,
                         'quantity': sale_line.product_uom_qty,
                         'uom_id': sale_line.product_id.uom_id.id,
@@ -160,17 +168,17 @@ class StockPicking(models.Model):
                         'discount': sale_line[0].discount,
                         'invoice_line_tax_ids': [(6, 0, tax_ids)]
                     })
-                    account_invoice_obj.compute_taxes()
+                    acc_inv_rec.compute_taxes()
                 else:
                     flag = 1
             if flag == 1:
                 self.invoice_line_non_kit()
 
-            sale_order.x_studio_last_invoice_date = \
-                datetime.date.today()
-            sale_order.x_studio_invoiced = True
-            sale_order.x_studio_invoice_amount = \
-                account_invoice_obj.amount_total
+            sale_order.write({
+                'x_studio_last_invoice_date': datetime.date.today(),
+                'x_studio_invoiced': True,
+                'x_studio_invoice_amount': acc_inv_rec.amount_total
+            })
         return True
 
     @api.multi
