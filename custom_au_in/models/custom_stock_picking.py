@@ -7,24 +7,28 @@ class StockPicking(models.Model):
     _inherit = "stock.picking"
 
     def invoice_line_non_kit(self):
-        inv_obj = self.env['account.invoice'].search(
-            [('sale_id', '=', self.origin)], limit=1)
-        invoice_line_obj = self.env['account.invoice.line']
-        sale_order = self.env['sale.order'].search(
-            [('name', '=', self.origin)])
         sale_order_line_obj = self.env['sale.order.line']
+        invoice_line_obj = self.env['account.invoice.line']
+        inv_rec = self.env['account.invoice'].search(
+            [('sale_id', '=', self.origin)], limit=1)
+        sale_order = self.env['sale.order'].search(
+            [('name', '=', self.origin)], limit=1)
         inv_line = False
         for sale_line in sale_order.order_line:
-            if not sale_line.product_id.product_tmpl_id.bom_ids:
+            if sale_line.product_id and \
+                    sale_line.product_id.product_tmpl_id and \
+                    not sale_line.product_id.product_tmpl_id.bom_ids:
                 account = self.get_account_properties()
                 inv_line = invoice_line_obj.create({
                     'name': sale_line.name,
-                    'account_id': account.id,
-                    'invoice_id': inv_obj and inv_obj.id or False,
+                    'account_id': account and account.id or False,
+                    'invoice_id': inv_rec and inv_rec.id or False,
                     'price_unit': sale_line.price_unit,
                     'quantity': sale_line.product_uom_qty,
-                    'uom_id': sale_line.product_id.uom_id.id,
-                    'product_id': sale_line.product_id.id,
+                    'uom_id': sale_line.product_id and
+                    sale_line.product_id.uom_id.id or False,
+                    'product_id': sale_line.product_id and
+                    sale_line.product_id.id or False,
                 })
                 order_line_ids = sale_order_line_obj.search([
                     ('order_id', '=', sale_order.id),
@@ -34,7 +38,6 @@ class StockPicking(models.Model):
                         'qty_to_invoice': sale_line.product_uom_qty,
                         'invoice_lines': [(4, inv_line.id, 0)]
                     })
-
                     tax_ids = []
                     if order_line and order_line_ids[0]:
                         for tax in order_line[0].tax_id:
@@ -45,7 +48,7 @@ class StockPicking(models.Model):
                         'discount': order_line[0].discount,
                         'invoice_line_tax_ids': [(6, 0, tax_ids)]
                     })
-                    inv_obj.compute_taxes()
+                    inv_rec.compute_taxes()
         return True
 
     def get_account_properties(self):
@@ -69,23 +72,25 @@ class StockPicking(models.Model):
         return account
 
     def invoice_lines_creation(self):
-        account_invoice_obj = self.env['account.invoice'].search(
-            [('sale_id', '=', self.origin)], limit=1)
-        account = self.get_account_properties()
-        sale_order = self.env['sale.order'].search(
-            [('name', '=', self.origin)])
-        for inv_lines in account_invoice_obj.invoice_line_ids:
-            inv_lines.unlink()
         invoice_line_obj = self.env['account.invoice.line']
+        acc_inv_rec = self.env['account.invoice'].search(
+            [('sale_id', '=', self.origin)], limit=1)
+        sale_order = self.env['sale.order'].search(
+            [('name', '=', self.origin)], limit=1)
+        account = self.get_account_properties()
+        for inv_lines in acc_inv_rec.invoice_line_ids:
+            inv_lines.unlink()
         for sale_line in sale_order.order_line:
             inv_line_id = invoice_line_obj.create({
                 'name': sale_line.name,
-                'account_id': account.id,
-                'invoice_id': account_invoice_obj.id,
+                'account_id': account and account.id or False,
+                'invoice_id': acc_inv_rec and acc_inv_rec.id or False,
                 'price_unit': sale_line.price_unit,
                 'quantity': sale_line.product_uom_qty,
-                'uom_id': sale_line.product_id.uom_id.id,
-                'product_id': sale_line.product_id.id
+                'uom_id': sale_line.product_id.uom_id and
+                sale_line.product_id.uom_id.id or False,
+                'product_id': sale_line.product_id and
+                sale_line.product_id.id or False
             })
             sale_line.write({
                 'qty_to_invoice': sale_line.qty_delivered,
@@ -100,7 +105,7 @@ class StockPicking(models.Model):
                         'discount': sale_line[0].discount,
                         'invoice_line_tax_ids': [(6, 0, tax_ids)]
                     })
-                    account_invoice_obj.compute_taxes()
+                    acc_inv_rec.compute_taxes()
         return True
 
     @api.multi
