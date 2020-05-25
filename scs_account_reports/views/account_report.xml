@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- QWeb Reports -->
+        <report
+            id="account_tax_invoices"
+            model="account.invoice"
+            string="Tax Invoices New"
+            report_type="qweb-pdf"
+            name="scs_account_reports.report_tax_invoice_with_payments"
+            file="scs_account_reports.report_tax_invoice_with_payments"
+            attachment="(object.state in ('open','in_payment','paid')) and ('INV'+(object.number or '').replace('/','')+'.pdf')"
+            print_report_name="(object._get_report_base_filename())"
+            groups="account.group_account_invoice"
+        />
+    </data>
+</odoo>

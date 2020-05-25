@@ -22,6 +22,8 @@
     # Views
     'data': [
         'report/report_invoice.xml',
+        'report/report_tax_invoice.xml',
+        'views/account_report.xml',
     ],
 
     # Techical

@@ -134,14 +134,34 @@ class GstReport(models.TransientModel):
         f14_style = workbook.add_format(
             {'font_name': 'Arial', 'bold': True,
              'font_size': 16, 'align': 'center'})
+        # Below code to print the Report Header for GST On Sales and Purchase
+        # -------------------------------------------------------------------
+        cell_left_bold_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'bold': True,
+            'align': 'left'
+        })
+        cell_left_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'left'
+        })
+        sheet.set_row(0, 25)
+        sheet.set_row(1, 25)
+        sheet.set_row(2, 25)
         sheet.write(0, 2, self.env.user.company_id.name, f14_style)
         sheet.write(1, 2, options.get('reportname'), f16_style)
-        sheet.write(
-            2, 2, convert_date('%s' % (options.get('date').get('date_from')),
-                               {'format': 'dd MMM YYYY'}) + ' - ' +
-            convert_date('%s' % (options.get('date').get('date_to')),
-                         {'format': 'dd MMM YYYY'}), f14_style)
-        y_offset = 4
+        sheet.write(2, 2,
+                    convert_date('%s' % (options.get('date').get('date_from')),
+                                 {'format': 'dd MMM YYYY'}) + ' - ' +
+                    convert_date('%s' % (options.get('date').get('date_to')),
+                                 {'format': 'dd MMM YYYY'}), f14_style)
+        current_dt = datetime.now().date().strftime("%d-%m-%Y")
+        sheet.set_column(3, 4, 12)
+        sheet.write(3, 4, "Printing Date:", cell_left_bold_fmt)
+        sheet.set_column(3, 5, 12)
+        sheet.write(3, 5, current_dt, cell_left_fmt)
+        # ---------------------------------------------------------------
+        y_offset = 5
 
         sheet.write(y_offset, 0, '', title_style)
         # Todo in master: Try to put this logic elsewhere

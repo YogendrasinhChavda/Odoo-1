@@ -45,28 +45,30 @@ class Picking(models.Model):
         super(Picking, self).action_done()
         if self.state == 'done':
             if self.picking_type_id.code == 'incoming':
-                account_inv_obj = self.env['account.invoice']
+                purchase = self.purchase_id
                 vals = {
                     'type': 'in_invoice',
                     'origin': self.origin,
-                    'pur_id': self.purchase_id.id,
-                    'purchase_id': self.purchase_id.id,
-                    'partner_id': self.partner_id.id,
+                    'pur_id': purchase and purchase.id or False,
+                    'purchase_id': purchase and purchase.id or False,
+                    'partner_id': self.partner_id and
+                    self.partner_id.id or False,
                     'picking_id': self.id
                 }
-                res = account_inv_obj.create(vals)
+                res = self.env['account.invoice'].create(vals)
                 res.purchase_order_change()
                 res.compute_taxes()
                 res._onchange_partner_id()
-                for purchase_line in account_inv_obj.invoice_line_ids:
-                    if purchase_line.quantity <= 0:
-                        purchase_line.unlink()
+                for inv_line in res.invoice_line_ids:
+                    if inv_line.quantity <= 0:
+                        inv_line.unlink()
 
             if self.picking_type_id.code == 'outgoing':
                 inv_obj = self.env['account.invoice']
                 sale_order_line_obj = self.env['account.invoice.line']
                 sale_order = self.env['sale.order'].search([
                     ('name', '=', self.origin)], limit=1)
+                delivery_partner = self.partner_id
                 if sale_order:
                     bank_acc = inv_obj._get_default_bank_id(
                         'out_invoice',
@@ -77,13 +79,18 @@ class Picking(models.Model):
                         'type': 'out_invoice',
                         'reference': False,
                         'sale_id': sale_order.id,
-                        'account_id': self.partner_id and
-                        self.partner_id.property_account_receivable_id and
-                        self.partner_id.property_account_receivable_id.id,
-                        'partner_id': self.partner_id.id,
+                        'account_id': delivery_partner and
+                        delivery_partner.property_account_receivable_id and
+                        delivery_partner.property_account_receivable_id.id or
+                        False,
+                        'partner_id': sale_order and
+                        sale_order.partner_invoice_id and
+                        sale_order.partner_invoice_id.id or
+                        delivery_partner and delivery_partner.id or False,
                         'partner_shipping_id':
                         sale_order.partner_shipping_id and
-                        sale_order.partner_shipping_id.id or False,
+                        sale_order.partner_shipping_id.id or
+                        delivery_partner and delivery_partner.id or False,
                         'currency_id': sale_order.pricelist_id.currency_id.id,
                         'payment_term_id': sale_order.payment_term_id.id,
                         'fiscal_position_id': sale_order.fiscal_position_id and

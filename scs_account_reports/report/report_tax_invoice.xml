@@ -1,0 +1,41 @@
+<odoo>
+    <data>
+        <!-- Inherited Invoice Report to Print "Tax Invoice Report" -->
+        <template id="report_tax_invoice_document_with_payments"
+            inherit_id="account.report_invoice_document" primary="True">
+            <xpath expr="//div[@class='page']/h2/span[1]" position="replace">
+                 <span t-if="o.type == 'out_invoice' and o.state in ('open', 'in_payment', 'paid')">Tax Invoice</span>
+            </xpath>
+            <xpath expr="/t/t/div/div[1]/div[1]/strong" position="replace">
+                <strong>Your Reference</strong>
+            </xpath>
+            <xpath expr="//p[@name='comment']" position="replace">
+                <t t-set="bank_vals" t-value="o.get_invoice_bill_bank_details()"/>
+                <span>
+                    <p>Please make payment with:<br/></p>
+                    <p>
+                        <b>Direct Debit Detail</b>
+                    </p>
+                    <p>
+                      <t t-if="o.company_id">
+                          <span t-esc="o.company_id.name"/>
+                      </t>
+                    </p>
+                    <p>Bank: <span t-esc="bank_vals['bank_name']"/></p>
+                    <p>BSB: <span t-esc="bank_vals['bsb']"/>  Account No: <span t-esc="bank_vals['acc_number']"/></p>
+                    <p>Swift Code: WPACAU2S<br/></p>
+                </span>
+            </xpath>
+        </template>
+
+        <!-- Tax Invoice Report Template -->
+        <template id="report_tax_invoice_with_payments">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-set="lang" t-value="o.user_id.sudo().lang if o.type in ('in_invoice', 'in_refund') else o.partner_id.lang"/>
+                    <t t-call="scs_account_reports.report_tax_invoice_document_with_payments" t-lang="lang"/>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>
