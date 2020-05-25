@@ -289,11 +289,6 @@ class WizNonParentChildReport(models.TransientModel):
                     prev_year_month_en_dt = \
                         prev_year_month_en_dt.strftime("%Y-%m-%d 23:59:59")
 
-                    # print("\n month_st_dt ::::::::::", month_st_dt)
-                    # print("\n month_en_dt ::::::::::", month_en_dt)
-                    # print("\n prev_year_month_st_dt ", prev_year_month_st_dt)
-                    # print("\n prev_year_month_en_dt ", prev_year_month_en_dt)
-
                     sale_ids = sale_obj.search([
                         ('company_id', '=', company),
                         ('partner_id', '=', plumber.id),
@@ -302,7 +297,6 @@ class WizNonParentChildReport(models.TransientModel):
                         # ('date_order', '>=', month_st_dt),
                         # ('date_order', '<=', month_en_dt),
                     ])
-                    print("\n sale_ids ::::::::::", sale_ids)
                     sale_tot = sum(sale_ids.mapped('amount_total'))
                     worksheet.write(row, col, sale_tot,
                                     cell_center_bal_fmt)

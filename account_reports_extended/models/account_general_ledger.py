@@ -276,15 +276,38 @@ class AccountReport(models.AbstractModel):
         ctx.update({'is_profit': is_profit})
         header = self.get_header(options)
         if len(header) > 0:
+            # Below Code to print the On-Screen Report Header Portion
             merge_format = workbook.add_format({
                 'bold': True,
                 'align': 'center',
                 'valign': 'vcenter',
             })
-            comapny_name = self.env.user.company_id and self.env.user.company_id.name or ''
-            sheet.merge_range(0, 0, 1, len(header[0]) - 1, comapny_name, merge_format)
-            sheet.merge_range(2, 0, 2, len(header[0]) - 1, self._get_report_name() , merge_format)
-        for row in self.with_context({'is_profit': is_profit}).get_header(options):
+            cell_left_bold_fmt = workbook.add_format({
+                'font_name': 'Arial',
+                'bold': True,
+                'align': 'left'
+            })
+            cell_left_fmt = workbook.add_format({
+                'font_name': 'Arial',
+                'align': 'left'
+            })
+            comapny_name = self.env.user.company_id and \
+                self.env.user.company_id.name or ''
+            sheet.merge_range(0, 0, 1, len(header[0]) - 1,
+                              comapny_name, merge_format)
+            sheet.merge_range(2, 0, 2, len(header[0]) - 1,
+                              self._get_report_name(), merge_format)
+            current_dt = datetime.datetime.now().date().strftime("%d-%m-%Y")
+            sheet.set_column(3, 2, 12)
+            sheet.set_column(3, 3, 12)
+            sheet.write(3, 3, "Printing Date:", cell_left_bold_fmt)
+            sheet.set_column(3, 4, 12)
+            sheet.write(3, 4, current_dt, cell_left_fmt)
+            # sheet.set_row(0, 25)
+            # sheet.set_row(1, 25)
+            # sheet.set_row(2, 25)
+        for row in self.with_context({
+                'is_profit': is_profit}).get_header(options):
             y_offset = y_offset + 5
             x = 0
             for column in row:
@@ -295,7 +318,8 @@ class AccountReport(models.AbstractModel):
                     sheet.write(y_offset, x, header_label, title_style)
                 else:
                     sheet.merge_range(y_offset, x, y_offset,
-                                      x + colspan - 1, header_label, title_style)
+                                      x + colspan - 1, header_label,
+                                      title_style)
                 x += colspan
             y_offset += 1
         options['is_profit'] = is_profit
@@ -500,7 +524,8 @@ class AccountFinancialReportLine(models.Model):
                         date_to = period.get(
                             'date_to', False) or period.get('date', False)
                         date_from, date_to, strict_range = per_id.with_context(
-                            date_from=date_from, date_to=date_to)._compute_date_range()
+                            date_from=date_from,
+                            date_to=date_to)._compute_date_range()
 
                         r = per_id.with_context(
                             date_from=date_from,
