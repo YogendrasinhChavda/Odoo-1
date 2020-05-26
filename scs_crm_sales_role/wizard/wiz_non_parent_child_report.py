@@ -103,8 +103,9 @@ class WizNonParentChildReport(models.TransientModel):
         # sales_team_obj = self.env['crm.team']
         # state_obj = self.env['res.country.state']
         # country_obj = self.env['res.country']
-        sale_obj = self.env['sale.order']
+        # sale_obj = self.env['sale.order']
         partner_obj = self.env['res.partner']
+        acc_inv_l_obj = self.env['account.invoice.line']
         wiz_exported_obj = self.env['wiz.non.parent.child.report.exported']
         # trg_team_obj = self.env['sales.billed.invoice.target.team']
         # inv_obj = self.env['account.invoice']
@@ -118,11 +119,12 @@ class WizNonParentChildReport(models.TransientModel):
         dates = [dt for dt in rrule(MONTHLY,
                                     dtstart=self.date_from,
                                     until=self.date_to)]
-        plumber_ids = partner_obj.search([
+        member_ids = partner_obj.search([
             ('company_id', '=', company),
             ('member_no', '!=', False)
             # ('x_studio_plumber', '=', True),
         ])
+        member_nos = list(set(member_ids.mapped('member_no')))
 
         file_path = 'Non-Parent And Child Report.xlsx'
         workbook = xlsxwriter.Workbook('/tmp/' + file_path)
@@ -253,70 +255,95 @@ class WizNonParentChildReport(models.TransientModel):
         col = 0
         final_ytd_tot = 0.0
         final_totals_dict = {}
-        for plumber in plumber_ids:
-            worksheet.write(row, col, plumber.member_no or ' ',
-                            cell_center_mem_id_fmt)
-            col += 1
-            worksheet.write(row, col, plumber.name or '',
-                            cell_center_left_mem_fmt)
-            col += 1
+        if member_nos:
+            for member_no in member_nos:
+                filtered_mem_ids = partner_obj.search([
+                    ('company_id', '=', company),
+                    ('member_no', '=', member_no),
+                    ('id', 'in', member_ids.ids)
+                    # ('x_studio_plumber', '=', True),
+                ])
+                parent_ids = list(set(filtered_mem_ids.mapped('parent_id')))
+                member_name = filtered_mem_ids and \
+                    filtered_mem_ids[0].name or ''
+                if parent_ids and len(parent_ids) == 1:
+                    member_name = parent_ids[0].name or ''
 
-            plumber_tot = 0.0
-            if dates:
-                for month_st_dt in dates:
-                    month_days = monthrange(month_st_dt.year,
-                                            month_st_dt.month)
-                    month_en_dt = month_st_dt
-                    month_en_dt = month_en_dt.\
-                        replace(day=int(month_days[1]))
+                worksheet.write(row, col, member_no or ' ',
+                                cell_center_mem_id_fmt)
+                col += 1
+                worksheet.write(row, col, member_name or '',
+                                cell_center_left_mem_fmt)
+                col += 1
 
-                    # month_str = month_st_dt.strftime("%B")
-                    dt_year = month_st_dt.year
-                    dt_prev_year = dt_year - 1
-                    prev_year_month_st_dt = month_st_dt
+                plumber_tot = 0.0
+                if dates:
+                    for month_st_dt in dates:
+                        month_days = monthrange(month_st_dt.year,
+                                                month_st_dt.month)
+                        month_en_dt = month_st_dt
+                        month_en_dt = month_en_dt.\
+                            replace(day=int(month_days[1]))
 
-                    pre_month_days = monthrange(dt_prev_year,
-                                                prev_year_month_st_dt.month)
-                    prev_year_month_en_dt = month_en_dt
+                        # month_str = month_st_dt.strftime("%B")
+                        dt_year = month_st_dt.year
+                        dt_prev_year = dt_year - 1
+                        prev_year_month_st_dt = month_st_dt
 
-                    prev_year_month_st_dt = prev_year_month_st_dt.\
-                        replace(year=int(dt_prev_year))
-                    prev_year_month_en_dt = prev_year_month_en_dt.\
-                        replace(day=int(pre_month_days[1]),
-                                year=int(dt_prev_year))
+                        pre_month_days = \
+                            monthrange(dt_prev_year,
+                                       prev_year_month_st_dt.month)
+                        prev_year_month_en_dt = month_en_dt
 
-                    month_en_dt = month_en_dt.strftime("%Y-%m-%d 23:59:59")
-                    prev_year_month_en_dt = \
-                        prev_year_month_en_dt.strftime("%Y-%m-%d 23:59:59")
+                        prev_year_month_st_dt = prev_year_month_st_dt.\
+                            replace(year=int(dt_prev_year))
+                        prev_year_month_en_dt = prev_year_month_en_dt.\
+                            replace(day=int(pre_month_days[1]),
+                                    year=int(dt_prev_year))
 
-                    sale_ids = sale_obj.search([
-                        ('company_id', '=', company),
-                        ('partner_id', '=', plumber.id),
-                        ('confirmation_date', '>=', month_st_dt),
-                        ('confirmation_date', '<=', month_en_dt),
-                        # ('date_order', '>=', month_st_dt),
-                        # ('date_order', '<=', month_en_dt),
-                    ])
-                    sale_tot = sum(sale_ids.mapped('amount_total'))
-                    worksheet.write(row, col, sale_tot,
-                                    cell_center_bal_fmt)
+                        month_en_dt = month_en_dt.strftime("%Y-%m-%d 23:59:59")
+                        prev_year_month_en_dt = \
+                            prev_year_month_en_dt.strftime("%Y-%m-%d 23:59:59")
 
-                    if final_totals_dict and \
-                            month_st_dt in final_totals_dict.keys():
-                        amt = final_totals_dict[month_st_dt] + sale_tot
-                        final_totals_dict.update({
-                            month_st_dt: amt
-                        })
-                    else:
-                        final_totals_dict.update({month_st_dt: sale_tot})
-                    plumber_tot += sale_tot
-                    col += 1
-            # YTD Total
-            worksheet.write(row, col, plumber_tot,
-                            cell_right_bal_blue_fmt)
-            final_ytd_tot += plumber_tot
-            row += 1
-            col = 0
+                        # sale_ids = sale_obj.search([
+                        #     ('company_id', '=', company),
+                        #     ('partner_id', '=', plumber.id),
+                        #     ('confirmation_date', '>=', month_st_dt),
+                        #     ('confirmation_date', '<=', month_en_dt),
+                        #     # ('date_order', '>=', month_st_dt),
+                        #     # ('date_order', '<=', month_en_dt),
+                        # ])
+                        acc_inv_l_ids = acc_inv_l_obj.search([
+                            ('invoice_id.type', 'in',
+                                ['out_invoice', 'out_refund']),
+                            ('x_studio_invoice_reference_status', 'not in',
+                                ['draft', 'cancel']),
+                            ('account_id', 'ilike', '4000'),
+                            ('partner_id', 'in', filtered_mem_ids.ids),
+                            ('x_studio_invoice_date', '>=', month_st_dt),
+                            ('x_studio_invoice_date', '<=', month_en_dt)
+                        ])
+                        sale_tot = sum(acc_inv_l_ids.mapped(
+                            'x_studio_signed_amount'))
+                        worksheet.write(row, col, sale_tot,
+                                        cell_center_bal_fmt)
+
+                        if final_totals_dict and \
+                                month_st_dt in final_totals_dict.keys():
+                            amt = final_totals_dict[month_st_dt] + sale_tot
+                            final_totals_dict.update({
+                                month_st_dt: amt
+                            })
+                        else:
+                            final_totals_dict.update({month_st_dt: sale_tot})
+                        plumber_tot += sale_tot
+                        col += 1
+                # YTD Total
+                worksheet.write(row, col, plumber_tot,
+                                cell_right_bal_blue_fmt)
+                final_ytd_tot += plumber_tot
+                row += 1
+                col = 0
         col = 1
         if final_totals_dict:
             worksheet.write(row, col, 'Total:', cell_left_tot_bal_fmt)
