@@ -5,6 +5,8 @@ import json
 
 from odoo import api, fields, models, _
 from datetime import datetime, date, timedelta
+import pytz
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DTF
 
 try:
     from odoo.tools.misc import xlsxwriter
@@ -155,10 +157,14 @@ class GstReport(models.TransientModel):
                                  {'format': 'dd MMM YYYY'}) + ' - ' +
                     convert_date('%s' % (options.get('date').get('date_to')),
                                  {'format': 'dd MMM YYYY'}), f14_style)
-        current_dt = datetime.now().date().strftime("%d-%m-%Y")
+        current_dt = datetime.now().strftime(DTF)
+        tz = pytz.timezone(self._context.get('tz', 'Asia/Calcutta'))
+        current_dt = pytz.timezone('UTC').localize(
+            datetime.strptime(current_dt, DTF)).\
+            astimezone(tz).strftime(DTF)
         sheet.set_column(3, 4, 12)
         sheet.write(3, 4, "Printing Date:", cell_left_bold_fmt)
-        sheet.set_column(3, 5, 12)
+        sheet.set_column(3, 5, 15)
         sheet.write(3, 5, current_dt, cell_left_fmt)
         # ---------------------------------------------------------------
         y_offset = 5
