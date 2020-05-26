@@ -83,10 +83,17 @@ class Picking(models.Model):
                         delivery_partner.property_account_receivable_id and
                         delivery_partner.property_account_receivable_id.id or
                         False,
-                        'partner_id': sale_order and
+                        # 'partner_id': sale_order and
+                        # sale_order.partner_invoice_id and
+                        # sale_order.partner_invoice_id.id or
+                        # delivery_partner and delivery_partner.id or False,
+
+                        # We set SO customer as Invoice
+                        # Customer As per Client need.
+                        'partner_id': sale_order.partner_id and
+                        sale_order.partner_id.id or
                         sale_order.partner_invoice_id and
-                        sale_order.partner_invoice_id.id or
-                        delivery_partner and delivery_partner.id or False,
+                        sale_order.partner_invoice_id.id or False,
                         'partner_shipping_id':
                         sale_order.partner_shipping_id and
                         sale_order.partner_shipping_id.id or
