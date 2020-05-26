@@ -4,7 +4,7 @@
         <template id="report_invoice_document_with_payments_inherit"
             inherit_id="account.report_invoice_document_with_payments">
             <xpath expr="/t/t/div/h2/span[1]" position="replace">
-                <span t-if="o.type == 'out_invoice' and o.state in ('open', 'in_payment', 'paid')">Tax Invoice</span>
+                <span t-if="o.type == 'out_invoice' and o.state in ('open', 'in_payment', 'paid')">Invoice</span>
             </xpath>
             <xpath expr="/t/t/div/table/thead/tr/th[1]" position="before">
                 <th>
@@ -28,7 +28,7 @@
             <xpath expr="/t/t/div/p[3]" position="after">
                 <div class="row">
                     <div class="col">
-                        <span>New Text Block</span>
+                        <span></span>
                     </div>
                 </div>
             </xpath>
@@ -88,6 +88,11 @@
                     <p>Please make payment with:<br/></p>
                     <p>
                         <b>Direct Debit Detail</b>
+                    </p>
+                    <p>
+                      <t t-if="o.company_id">
+                          <span t-esc="o.company_id.name"/>
+                      </t>
                     </p>
                     <p>Bank: <span t-esc="bank_vals['bank_name']"/></p>
                     <p>BSB: <span t-esc="bank_vals['bsb']"/>  Account No: <span t-esc="bank_vals['acc_number']"/></p>

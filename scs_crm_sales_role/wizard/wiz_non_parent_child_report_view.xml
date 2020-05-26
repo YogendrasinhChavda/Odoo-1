@@ -1,8 +1,8 @@
 <odoo>
-    <!-- Form View of Wizard Sales Team Target Report Exported -->
-    <record id="wiz_sales_team_target_report_exported_form" model="ir.ui.view">
-        <field name="name">wiz.sales.team.target.report.exported.form</field>
-        <field name="model">wiz.sales.team.target.report.exported</field>
+    <!-- Form View of Wizard Non Parent Child Report Exported -->
+    <record id="wiz_non_parent_child_report_exported_form" model="ir.ui.view">
+        <field name="name">wiz.non.parent.child.report.exported.form</field>
+        <field name="model">wiz.non.parent.child.report.exported</field>
         <field name="arch" type="xml">
             <form string="Export File">
                 <group>
@@ -19,12 +19,12 @@
         </field>
     </record>
 
-    <!-- Form View of Wizard Sales Team Target Report -->
-    <record id="wiz_sales_team_target_report_form" model="ir.ui.view">
-        <field name="name">wiz.sales.team.target.report.form</field>
-        <field name="model">wiz.sales.team.target.report</field>
+    <!-- Form View of Wizard Non Parent Child Report -->
+    <record id="wiz_non_parent_child_report_form" model="ir.ui.view">
+        <field name="name">wiz.non.parent.child.report.form</field>
+        <field name="model">wiz.non.parent.child.report</field>
         <field name="arch" type="xml">
-            <form string="Sales Team Target Report">
+            <form string="Non-Parent Child Report">
                 <group>
                     <field name="company_id" required="1"/>
                     <field name="date_from" required="1"
@@ -41,28 +41,21 @@
         </field>
     </record>
 
-    <!-- Action View of Wizard Sales Team Target Report -->
-    <record id="action_wiz_sales_team_target_report" model="ir.actions.act_window">
-        <field name="name">Sales Team Target Report</field>
+    <!-- Action View of Wizard Non Parent Child Report -->
+    <record id="action_wiz_non_parent_child_report" model="ir.actions.act_window">
+        <field name="name">Non-Parent Child Report</field>
         <field name="type">ir.actions.act_window</field>
-        <field name="res_model">wiz.sales.team.target.report</field>
+        <field name="res_model">wiz.non.parent.child.report</field>
         <field name="view_type">form</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
 
-    <!-- Menuitem of Management Report Main menu -->
+    <!-- Menuitem of Wizard Non Parent Child Report -->
     <menuitem
-        id="menu_management_reports"
-        name="Management Reports"
-        parent="sale.menu_sale_report"
-        sequence="5"/>
-
-    <!-- Menuitem of Wizard Sales Team Target Report -->
-    <menuitem
-        id="menu_wiz_sales_team_target_report"
-        name="Sales Team Target Report"
-        action="action_wiz_sales_team_target_report"
-        parent="menu_management_reports"
-        sequence="6"/>
+        id="menu_wiz_non_parent_child_report"
+        name="Non-Parent Child Reports"
+        action="action_wiz_non_parent_child_report"
+        parent="scs_crm_sales_role.menu_management_reports"
+        sequence="7"/>
 </odoo>

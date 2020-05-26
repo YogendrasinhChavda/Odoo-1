@@ -5,6 +5,8 @@ import json
 
 from odoo import api, fields, models, _
 from datetime import datetime, date, timedelta
+import pytz
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DTF
 
 try:
     from odoo.tools.misc import xlsxwriter
@@ -134,14 +136,38 @@ class GstReport(models.TransientModel):
         f14_style = workbook.add_format(
             {'font_name': 'Arial', 'bold': True,
              'font_size': 16, 'align': 'center'})
+        # Below code to print the Report Header for GST On Sales and Purchase
+        # -------------------------------------------------------------------
+        cell_left_bold_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'bold': True,
+            'align': 'left'
+        })
+        cell_left_fmt = workbook.add_format({
+            'font_name': 'Arial',
+            'align': 'left'
+        })
+        sheet.set_row(0, 25)
+        sheet.set_row(1, 25)
+        sheet.set_row(2, 25)
         sheet.write(0, 2, self.env.user.company_id.name, f14_style)
         sheet.write(1, 2, options.get('reportname'), f16_style)
-        sheet.write(
-            2, 2, convert_date('%s' % (options.get('date').get('date_from')),
-                               {'format': 'dd MMM YYYY'}) + ' - ' +
-            convert_date('%s' % (options.get('date').get('date_to')),
-                         {'format': 'dd MMM YYYY'}), f14_style)
-        y_offset = 4
+        sheet.write(2, 2,
+                    convert_date('%s' % (options.get('date').get('date_from')),
+                                 {'format': 'dd MMM YYYY'}) + ' - ' +
+                    convert_date('%s' % (options.get('date').get('date_to')),
+                                 {'format': 'dd MMM YYYY'}), f14_style)
+        current_dt = datetime.now().strftime(DTF)
+        tz = pytz.timezone(self._context.get('tz', 'Asia/Calcutta'))
+        current_dt = pytz.timezone('UTC').localize(
+            datetime.strptime(current_dt, DTF)).\
+            astimezone(tz).strftime(DTF)
+        sheet.set_column(3, 4, 12)
+        sheet.write(3, 4, "Printing Date:", cell_left_bold_fmt)
+        sheet.set_column(3, 5, 15)
+        sheet.write(3, 5, current_dt, cell_left_fmt)
+        # ---------------------------------------------------------------
+        y_offset = 5
 
         sheet.write(y_offset, 0, '', title_style)
         # Todo in master: Try to put this logic elsewhere
@@ -340,6 +366,7 @@ class GstReport(models.TransientModel):
             total_net += values['net']
             total_tax += values['tax']
             current_id = values['id']
+            # current_id : this is actually accout tax id.
             if offset == 0:
                 lines.append({
                     'id': 'tax_%s' % (current_id),
@@ -384,13 +411,15 @@ class GstReport(models.TransientModel):
                         left join account_payment f on a.payment_id = f.id
                         left join account_journal c on a.journal_id=c.id
                         left join account_move d on a.move_id=d.id
-                    where a.date>='%s' and a.date<='%s') b where
+                    where a.date>='%s' and a.date<='%s' and
+                    a.company_id = '%s') b where
                     b.tax_line_id = %s order by b.date,
                     b.jentry, abs(b.net) desc""" % (
                     options.get('reporttype'), company, company,
                     options.get('reporttype'),
                     options.get('date').get('date_from'),
-                    options.get('date').get('date_to'), current_id)
+                    options.get('date').get('date_to'), company,
+                    current_id)
 
                 self.env.cr.execute(select, [])
                 results1 = self.env.cr.dictfetchall()

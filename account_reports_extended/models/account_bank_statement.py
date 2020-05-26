@@ -35,5 +35,5 @@ class AccountBankStatement(models.Model):
             for bk_st in self:
                 res.append((bk_st.id, bk_st.date))
         else:
-            res = super(AccountBankStatement, self).name_get()
+            return super(AccountBankStatement, self).name_get()
         return res
