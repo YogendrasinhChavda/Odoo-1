@@ -14,14 +14,15 @@ from odoo import models, fields, api, _
 from odoo.tools.misc import format_date, formatLang
 from datetime import datetime, timedelta
 from odoo.addons.web.controllers.main import clean_action
-from odoo.tools import float_is_zero, ustr
+from odoo.tools import float_is_zero
 from odoo.tools.safe_eval import safe_eval
 from datetime import datetime
 import datetime
 from odoo.osv import expression
 from dateutil.relativedelta import relativedelta
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools.pycompat import izip
+import pytz
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DTF
 
 
 class report_account_general_ledger(models.AbstractModel):
@@ -297,11 +298,15 @@ class AccountReport(models.AbstractModel):
                               comapny_name, merge_format)
             sheet.merge_range(2, 0, 2, len(header[0]) - 1,
                               self._get_report_name(), merge_format)
-            current_dt = datetime.datetime.now().date().strftime("%d-%m-%Y")
+            current_dt = datetime.datetime.now().strftime(DTF)
+            tz = pytz.timezone(self._context.get('tz', 'Asia/Calcutta'))
+            current_dt = pytz.timezone('UTC').localize(
+                datetime.datetime.strptime(current_dt, DTF)).\
+                astimezone(tz).strftime(DTF)
             sheet.set_column(3, 2, 12)
             sheet.set_column(3, 3, 12)
             sheet.write(3, 3, "Printing Date:", cell_left_bold_fmt)
-            sheet.set_column(3, 4, 12)
+            sheet.set_column(3, 4, 15)
             sheet.write(3, 4, current_dt, cell_left_fmt)
             # sheet.set_row(0, 25)
             # sheet.set_row(1, 25)
