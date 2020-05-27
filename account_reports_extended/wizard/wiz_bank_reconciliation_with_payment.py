@@ -209,10 +209,18 @@ class WizBankReconciliationReport(models.TransientModel):
                 ('date', '=', self.bnk_st_date.sudo().date),
                 ('journal_id', '=', journal.id),
                 ('company_id', '=', company.id)], limit=1)
+
+            # last_bank_st_id = self.env['account.bank.statement'].search([
+            #     ('journal_id', '=', journal.id),
+            #     ('date', '<=', self.bnk_st_date.sudo().date),
+            #     ('company_id', '=', company.id)],
+            #     order="date desc, id desc", limit=1)
+
             last_bank_st_id = bank_st_obj.search([
                 ('date', '<', self.bnk_st_date.sudo().date),
                 ('journal_id', '=', journal.id),
                 ('company_id', '=', company.id)], limit=1)
+            last_st_balance = last_bank_st_id.balance_end
 
             last_reconcile_date_str = ''
             last_reconcile_date = ''
@@ -259,18 +267,72 @@ class WizBankReconciliationReport(models.TransientModel):
             # tot_reconcile_vend_lines = \
             #     sum(reconcile_vend_bnk_st_lines.mapped('amount'))
 
-            unreconcile_cust_bnk_st_lines = bank_st_l_obj.search([
-                # ('date', '=', self.bnk_st_date.sudo().date),
-                ('statement_id', '=', bank_st_id and bank_st_id.id or False),
-                ('statement_id.journal_id', '=', journal.id),
-                ('statement_id.company_id', '=', company.id),
-                ('journal_entry_ids', '=', False),
-                # ('amount', '>', 0.0)
-                # ('state', '=', 'confirm')
-            ])
-            tot_unreconcile_cust_lines = \
-                sum(unreconcile_cust_bnk_st_lines.mapped('amount'))
+            # unreconcile_cust_bnk_st_lines = bank_st_l_obj.search([
+            #     # ('date', '=', self.bnk_st_date.sudo().date),
+            #     ('statement_id', '=', bank_st_id and bank_st_id.id or False),
+            #     ('statement_id.journal_id', '=', journal.id),
+            #     ('statement_id.company_id', '=', company.id),
+            #     ('journal_entry_ids', '=', False),
+            #     # ('amount', '>', 0.0)
+            #     # ('state', '=', 'confirm')
+            # ])
+            # tot_unreconcile_cust_lines = \
+            #     sum(unreconcile_cust_bnk_st_lines.mapped('amount'))
 
+            system_stf_fy_dt = self.bnk_st_date.sudo().date.\
+                replace(year=2018, month=7, day=1)
+            tot_virtual_gl_bal = 0.0
+            account_ids = list(set([
+                journal.default_debit_account_id.id,
+                journal.default_credit_account_id.id]) - {False})
+            lines_already_accounted = move_l_obj.search([
+                ('account_id', 'in', account_ids),
+                ('date', '<=', self.bnk_st_date.sudo().date),
+                ('company_id', '=', company.id)])
+
+            odoo_balance = sum(lines_already_accounted.mapped('balance'))
+
+            # Bank statement lines not reconciled with a payment
+            bank_st_positiove_l = bank_st_l_obj.search([
+                ('statement_id.journal_id', '=', journal.id),
+                ('date', '<=', self.bnk_st_date.sudo().date),
+                ('journal_entry_ids', '=', False),
+                ('amount', '>', 0),
+                ('company_id', '=', company.id)])
+
+            outstanding_plus_tot = sum(bank_st_positiove_l.mapped('amount'))
+
+            bank_st_minus_l = bank_st_l_obj.search([
+                ('statement_id.journal_id', '=', journal.id),
+                ('date', '<=', self.bnk_st_date.sudo().date),
+                ('journal_entry_ids', '=', False),
+                ('amount', '<', 0),
+                ('company_id', '=', company.id)])
+
+            outstanding_minus_tot = sum(bank_st_minus_l.mapped('amount'))
+
+            unreconcile_checks_payments = move_l_obj.search([
+                '|', '&',
+                ('move_id.journal_id.type', 'in', ['cash', 'bank']),
+                ('move_id.journal_id', '=', journal.id),
+                '&',
+                ('move_id.journal_id.type', 'not in', ['cash', 'bank']),
+                ('move_id.journal_id', '=', journal.id),
+                '|',
+                ('statement_line_id', '=', False),
+                ('statement_line_id.date', '>', self.bnk_st_date.sudo().date),
+                ('user_type_id.type', '=', 'liquidity'),
+                ('full_reconcile_id', '=', False),
+                ('date', '<=', self.bnk_st_date.sudo().date),
+                '&',
+                ('company_id', '=', company.id),
+                ('date', '>=', system_stf_fy_dt)
+            ])
+            unrec_tot = sum(unreconcile_checks_payments.mapped('balance'))
+
+            tot_virtual_gl_bal = odoo_balance + outstanding_plus_tot + \
+                outstanding_minus_tot + unrec_tot
+            difference = tot_virtual_gl_bal - last_st_balance
             # unreconcile_vend_bnk_st_lines = bank_st_l_obj.search([
             #     # ('date', '=', self.bnk_st_date.sudo().date),
             #     ('statement_id', '=', bank_st_id and bank_st_id.id or False),
@@ -526,8 +588,7 @@ class WizBankReconciliationReport(models.TransientModel):
             row += 1
             worksheet.merge_range(row, 0, row, 3, 'Unreconciled',
                                   header_cell_l_fmat)
-            worksheet.write(row, 5, round(tot_unreconcile_cust_lines, 2),
-                            cell_r_bold_noborder)
+            worksheet.write(row, 5, round(unrec_tot, 2), cell_r_bold_noborder)
             row += 1
             worksheet.merge_range(row, 0, row, 3,
                                   'Uncleared  Checks and Payments',
@@ -537,9 +598,15 @@ class WizBankReconciliationReport(models.TransientModel):
             col = 0
             row += 1
             tot_unreconcile_cust_payment = 0.0
-            for cust_unrecon_l in unreconcile_cust_bnk_st_lines:
+            for cust_unrecon_l in unreconcile_checks_payments:
+                trns_type = 'Payment'
+                if cust_unrecon_l.payment_id and \
+                        cust_unrecon_l.payment_id.payment_type:
+                    if cust_unrecon_l.payment_id.payment_type in \
+                            ['outbound', 'transfer']:
+                        trns_type = 'Bill Payment'
                 tot_unreconcile_cust_payment = tot_unreconcile_cust_payment + \
-                    cust_unrecon_l.amount or 0.0
+                    cust_unrecon_l.balance or 0.0
                 # journal = cust_pay.journal_id and \
                 #    cust_pay.journal_id.name or ''
                 payment_date = ''
@@ -563,7 +630,7 @@ class WizBankReconciliationReport(models.TransientModel):
 
                 worksheet.write(row, col, ' ', cell_c_fmat)
                 col += 1
-                worksheet.write(row, col, 'Payment', cell_c_fmat)
+                worksheet.write(row, col, trns_type, cell_c_fmat)
                 col += 1
                 worksheet.write(row, col, payment_date, cell_c_fmat)
                 col += 1
@@ -584,7 +651,7 @@ class WizBankReconciliationReport(models.TransientModel):
                 worksheet.write(row, col, cust_unrecon_pay_memo or '',
                                 cell_l_fmat)
                 col += 1
-                worksheet.write(row, col, cust_unrecon_l.amount or 0.0,
+                worksheet.write(row, col, cust_unrecon_l.balance or 0.0,
                                 cell_r_fmat)
                 col = 0
                 row += 1
