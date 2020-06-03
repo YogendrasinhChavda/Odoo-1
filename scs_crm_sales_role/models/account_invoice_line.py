@@ -11,11 +11,22 @@ class AccountInvoiceLine(models.Model):
     partner_parent_id = fields.Many2one(related="partner_id.parent_id",
                                         string="Customer Parent Name",
                                         store=True)
+    team_id = fields.Many2one(related="invoice_id.team_id",
+                              string="Sales Team",
+                              store=True)
 
     # Moved Below fields here from studio custom
     x_studio_partner_salesperson = fields.Many2one(
         related="invoice_id.partner_id.user_id",
         string="Partner Salesperson", store=True)
+
+    # x_studio_customer_name = fields.Char(
+    #     related="sale_line_ids.order_id.partner_id.display_name",
+    #     string="Customer Name")
+    x_studio_customer_name = fields.Char(
+        related="invoice_id.partner_id.name",
+        string="Customer Name",
+        store=True)
 
     x_studio_sales_person = \
         fields.Many2one(
