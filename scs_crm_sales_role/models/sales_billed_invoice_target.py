@@ -57,6 +57,12 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                                  default=lambda self: self.env.user and
                                  self.env.user.company_id)
 
+    @api.onchange('date_from')
+    def onchange_date_from(self):
+        """Onchange date_from reset end date."""
+        if self.date_from and self.date_to:
+            self.date_to = False
+
     @api.constrains('date_from', 'date_to')
     def _check_from_to_date(self):
         for rec in self:
@@ -110,21 +116,25 @@ class SalesBilledInvoiceTargetTeam(models.Model):
     @api.multi
     @api.depends(
         'team_id', 'team_id.states_team_ids',
+        'team_id.states_team_ids.sale_team_orders_ids.invoice_status',
         'team_id.states_team_ids.sale_team_orders_ids.team_id',
         'team_id.states_team_ids.sale_team_invoice_ids.team_id',
         'team_id.states_team_ids.sale_team_orders_ids.state',
         'team_id.states_team_ids.sale_team_invoice_ids.state',
         'team_id.region_team_ids',
+        'team_id.region_team_ids.sale_team_orders_ids.invoice_status',
         'team_id.region_team_ids.sale_team_orders_ids.team_id',
         'team_id.region_team_ids.sale_team_invoice_ids.team_id',
         'team_id.region_team_ids.sale_team_orders_ids.state',
         'team_id.region_team_ids.sale_team_invoice_ids.state',
         'team_id.region_team_ids.states_team_ids',
+        'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.invoice_status',
         'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.team_id',
         'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.team_id',
         'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.state',
         'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.state',
         'team_id.sale_team_orders_ids',
+        'team_id.sale_team_orders_ids.invoice_status',
         'team_id.sale_team_orders_ids.state',
         'team_id.sale_team_invoice_ids',
         'team_id.sale_team_invoice_ids.state',
@@ -146,6 +156,9 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     ('confirmation_date', '<=', sale_team_trg.date_to),
                     ('team_id', 'in', team_ids),
                     ('state', 'in', ['sale', 'done'])])
+                sales_ids = [sale.id for sale in sales if not sale.invoice_ids]
+                sales = sale_obj.browse(sales_ids)
+
                 sale_team_trg.sale_team_order_ids = [(6, 0, sales.ids)]
                 sale_team_trg.sales_ord_trg_achived = \
                     sum([sale.amount_total for sale in sales]) or 0.0
@@ -273,6 +286,12 @@ class SalesBilledInvoiceTarget(models.Model):
                                  default=lambda self: self.env.user and
                                  self.env.user.company_id)
 
+    @api.onchange('date_from')
+    def onchange_date_from(self):
+        """Onchange date_from reset end date."""
+        if self.date_from and self.date_to:
+            self.date_to = False
+
     @api.onchange('company_id')
     def onchange_company_id(self):
         """Onchange company_id reset the information."""
@@ -342,6 +361,7 @@ class SalesBilledInvoiceTarget(models.Model):
     @api.multi
     @api.depends('sales_user_id',
                  'sales_user_id.sale_person_orders_ids',
+                 'sales_user_id.sale_person_orders_ids.invoice_status',
                  'sales_user_id.sale_person_orders_ids.state',
                  'sales_user_id.sale_person_orders_ids.user_id',
                  'sales_user_id.sale_person_invoice_ids',
@@ -364,7 +384,11 @@ class SalesBilledInvoiceTarget(models.Model):
                     ('confirmation_date', '<=', sale_person_trg.date_to),
                     ('user_id', '=', sale_person),
                     # ('team_id', '=', team_id),
+                    # ('invoice_status', '=', 'no'),
                     ('state', 'in', ['sale', 'done'])])
+                sales_ids = [sale.id for sale in sales if not sale.invoice_ids]
+                if sales_ids:
+                    sales = sale_obj.browse(sales_ids)
                 sale_person_trg.sale_person_order_ids = [(6, 0, sales.ids)]
                 sale_person_trg.sales_ord_trg_achived = \
                     sum([sale.amount_total for sale in sales]) or 0.0
