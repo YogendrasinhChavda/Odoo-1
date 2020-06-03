@@ -148,6 +148,7 @@
                     domain="[('user_id', '=', uid)]"/>
                 <separator/>
                 <field name="x_studio_invoice_date"/>
+                <field name="team_id"/>
                 <separator/>
                 <filter string="To Invoice (Draft Invoice)"
                     name="toinvoice"

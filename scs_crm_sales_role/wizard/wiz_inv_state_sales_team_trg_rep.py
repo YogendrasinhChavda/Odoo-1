@@ -303,7 +303,7 @@ class WizSalesTeamTargetReport(models.TransientModel):
         # partner_ids = sale_ids.mapped('partner_id')
         # team_ids = sale_ids.mapped('team_id')
         country_ids = acc_inv_l_ids.mapped('partner_id').mapped('country_id')
-        # state_ids = sale_ids.mapped('partner_id').mapped('state_id')
+        # state_ids = acc_inv_l_ids.mapped('partner_id').mapped('state_id')
         for country_id in country_obj.search([
                 ('id', 'in', country_ids.ids)], order="name"):
             worksheet.set_row(row, 25)
@@ -333,6 +333,8 @@ class WizSalesTeamTargetReport(models.TransientModel):
                     ['draft', 'cancel'])])
 
             sale_team_ids = sale_country_ids.mapped('team_id')
+            # state_ids = sale_country_ids.\
+            #     mapped('partner_id').mapped('state_id')
             for team_id in sale_team_ids:
                 worksheet.set_row(row, 20)
                 worksheet.write(row, col,
