@@ -1,6 +1,6 @@
 """CRM Team Model."""
 
-from odoo import fields, models
+from odoo import fields, models, api
 
 
 class ResUsers(models.Model):
@@ -54,10 +54,6 @@ class CrmTeam(models.Model):
                                            string="Sales Team Orders")
     sale_team_invoice_ids = fields.One2many('account.invoice', 'team_id',
                                             string="Sales Team Invoices")
-
-    # @api.onchange('levels')
-    # def onchange_levels(self):
-    #     """Onchange method to set the """
 
 
 class CrmLead(models.Model):

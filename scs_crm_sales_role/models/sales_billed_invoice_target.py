@@ -56,6 +56,13 @@ class SalesBilledInvoiceTargetTeam(models.Model):
     company_id = fields.Many2one("res.company", string="Company",
                                  default=lambda self: self.env.user and
                                  self.env.user.company_id)
+    country_id = fields.Many2one("res.country", string="Country")
+    state_id = fields.Many2one("res.country.state", string="State")
+
+    @api.onchange('country_id')
+    def onchange_country_id(self):
+        """Onchange method to re-set the state information."""
+        self.state_id = False
 
     @api.onchange('date_from')
     def onchange_date_from(self):
@@ -156,7 +163,14 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     ('confirmation_date', '<=', sale_team_trg.date_to),
                     ('team_id', 'in', team_ids),
                     ('state', 'in', ['sale', 'done'])])
-                sales_ids = [sale.id for sale in sales if not sale.invoice_ids]
+                sales_ids = []
+                for sale in sales:
+                    if not sale.invoice_ids:
+                        sales_ids.append(sale.id)
+                    for inv in sale.invoice_ids:
+                        if inv and inv.state in ['draft', 'on_hold']:
+                            sales_ids.append(sale.id)
+                sales_ids = list(set(sales_ids))
                 sales = sale_obj.browse(sales_ids)
 
                 sale_team_trg.sale_team_order_ids = [(6, 0, sales.ids)]
@@ -386,9 +400,15 @@ class SalesBilledInvoiceTarget(models.Model):
                     # ('team_id', '=', team_id),
                     # ('invoice_status', '=', 'no'),
                     ('state', 'in', ['sale', 'done'])])
-                sales_ids = [sale.id for sale in sales if not sale.invoice_ids]
-                if sales_ids:
-                    sales = sale_obj.browse(sales_ids)
+                sales_ids = []
+                for sale in sales:
+                    if not sale.invoice_ids:
+                        sales_ids.append(sale.id)
+                    for inv in sale.invoice_ids:
+                        if inv and inv.state in ['draft', 'on_hold']:
+                            sales_ids.append(sale.id)
+                sales_ids = list(set(sales_ids))
+                sales = sale_obj.browse(sales_ids)
                 sale_person_trg.sale_person_order_ids = [(6, 0, sales.ids)]
                 sale_person_trg.sales_ord_trg_achived = \
                     sum([sale.amount_total for sale in sales]) or 0.0
