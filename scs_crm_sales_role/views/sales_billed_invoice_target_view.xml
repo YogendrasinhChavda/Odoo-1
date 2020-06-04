@@ -22,7 +22,13 @@
                     <group>
                         <group>
                             <field name="company_id" required="1"/>
-                            <field name="team_id" required="1" domain="[('company_id','=', company_id)]"/>
+                            <field name="team_id" required="1"
+                                domain="[('company_id','=', company_id)]"/>
+                            <field name="country_id"
+                                options="{'no_create': True, 'no_open': True}"/>
+                            <field name="state_id"
+                                options="{'no_create': True, 'no_open': True}"
+                                domain="[('country_id', '=', country_id)]"/>
                             <field name="regions"/>
                             <field name="time_span" required="1"/>
                             <field name="date_from" required="1"/>
@@ -56,11 +62,16 @@
         <field name="arch" type="xml">
             <tree string="Sales Order vs Billed Invoice Target">
                 <field name="team_id" required="1" domain="[('company_id','=', company_id)]"/>
+                <field name="country_id"
+                    options="{'no_create': True, 'no_open': True}"/>
+                <field name="state_id"
+                    options="{'no_create': True, 'no_open': True}"
+                    domain="[('country_id', '=', country_id)]"/>
                 <field name="regions"/>
-                <field name="sales_team_target"/>
                 <field name="time_span"/>
                 <field name="date_from"/>
                 <field name="date_to"/>
+                <field name="sales_team_target"/>
                 <field name="sales_ord_trg_achived"/>
                 <field name="billed_inv_trg_achived"/>
                 <field name="state"/>
@@ -76,6 +87,8 @@
         <field name="arch" type="xml">
             <search string="Sales Order vs Billed Invoice Target">
                 <field name="team_id"/>
+                <field name="country_id"/>
+                <field name="state_id"/>
                 <field name="regions"/>
                 <field name="time_span"/>
                 <field name="date_from"/>
@@ -194,10 +207,10 @@
                <!--  <field name="team_id" required="1"/>
                 <field name="regions"/> -->
                 <field name="sales_user_id" required="1" domain="[('company_id','=', company_id)]"/>
-                <field name="sales_person_target"/>
                 <field name="time_span"/>
                 <field name="date_from"/>
                 <field name="date_to"/>
+                <field name="sales_person_target"/>
                 <field name="sales_ord_trg_achived"/>
                 <field name="billed_inv_trg_achived"/>
                 <field name="state"/>
