@@ -397,12 +397,16 @@ class WizBankReconciliationReport(models.TransientModel):
             row += 1
             tot_cust_payment = 0.0
             for cust_pay_line in reconcile_cust_bnk_st_lines:
+                account_ids = list(set([
+                    journal.default_debit_account_id.id,
+                    journal.default_credit_account_id.id]) - {False})
                 move_lines = move_l_obj.search([
                     ('statement_line_id', '=', cust_pay_line.id),
                     ('payment_id', '!=', False),
                     ('payment_id.payment_type', '=', 'inbound'),
                     # ('credit', '>', 0.0),
-                    ('balance', '>=', 0.0)
+                    ('balance', '>=', 0.0),
+                    ('account_id', 'in', account_ids)
                 ])
                 for move_l in move_lines:
                     balance = move_l.balance or 0.0
@@ -480,13 +484,17 @@ class WizBankReconciliationReport(models.TransientModel):
             row += 1
             tot_vend_payment = 0.0
             for vend_pay_line in reconcile_vend_bnk_st_lines:
+                account_ids = list(set([
+                    journal.default_debit_account_id.id,
+                    journal.default_credit_account_id.id]) - {False})
                 move_lines = move_l_obj.search([
                     ('statement_line_id', '=', vend_pay_line.id),
                     ('payment_id', '!=', False),
                     ('payment_id.payment_type', 'in',
                         ['outbound', 'transfer']),
                     # ('debit', '>', 0.0)
-                    ('balance', '<=', 0.0)
+                    ('balance', '<=', 0.0),
+                    ('account_id', 'in', account_ids)
                 ])
                 for move_l in move_lines:
                     balance = move_l and move_l.balance or 0.0
