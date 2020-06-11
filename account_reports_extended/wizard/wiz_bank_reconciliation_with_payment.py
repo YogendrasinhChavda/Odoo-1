@@ -333,6 +333,7 @@ class WizBankReconciliationReport(models.TransientModel):
             tot_virtual_gl_bal = odoo_balance + outstanding_plus_tot + \
                 outstanding_minus_tot + unrec_tot
             difference = tot_virtual_gl_bal - last_st_balance
+
             # unreconcile_vend_bnk_st_lines = bank_st_l_obj.search([
             #     # ('date', '=', self.bnk_st_date.sudo().date),
             #     ('statement_id', '=', bank_st_id and bank_st_id.id or False),
@@ -403,7 +404,7 @@ class WizBankReconciliationReport(models.TransientModel):
                 move_lines = move_l_obj.search([
                     ('statement_line_id', '=', cust_pay_line.id),
                     ('payment_id', '!=', False),
-                    ('payment_id.payment_type', '=', 'inbound'),
+                    ('payment_id.payment_type', 'in', ['inbound', 'transfer']),
                     # ('credit', '>', 0.0),
                     ('balance', '>=', 0.0),
                     ('account_id', 'in', account_ids)
