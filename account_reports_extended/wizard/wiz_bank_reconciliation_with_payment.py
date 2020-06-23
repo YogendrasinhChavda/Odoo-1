@@ -206,7 +206,7 @@ class WizBankReconciliationReport(models.TransientModel):
         from_date = datetime.strftime(self.bnk_st_date.sudo().date, '%d/%m/%Y')
         # for journal in self.journal_ids:
         for journal in self.journal_id:
-
+            currency_id = journal.sudo().currency_id or False
             currency_symbol = journal.sudo().currency_id and \
                 journal.sudo().currency_id.symbol or \
                 journal.sudo().company_id and \
@@ -423,8 +423,12 @@ class WizBankReconciliationReport(models.TransientModel):
                     ('account_id', 'in', account_ids)
                 ])
                 for move_l in move_lines:
-                    balance = move_l.balance or 0.0
-                    # balance = move_l.credit or 0.0
+                    balance = move_l and move_l.balance or 0.0
+                    if currency_id:
+                        balance = move_l and move_l.amount_currency or 0.0
+                        if balance in [0.0, -0.0]:
+                            balance = move_l and move_l.balance or 0.0
+
                     tot_cust_payment = tot_cust_payment + balance or 0.0
                     payment_date = ''
                     if move_l and move_l.date:
@@ -492,11 +496,11 @@ class WizBankReconciliationReport(models.TransientModel):
 
             tot_cust_payment_str = round(tot_cust_payment, 2)
             if currency_position == 'after':
-                tot_cust_payment_str = \
-                    ustr(tot_cust_payment_str) + ustr(currency_symbol)
+                tot_cust_payment_str = ustr(
+                    tot_cust_payment_str) + ustr(currency_symbol)
             else:
-                tot_cust_payment_str = \
-                    ustr(currency_symbol) + ustr(tot_cust_payment_str)
+                tot_cust_payment_str = ustr(
+                    currency_symbol) + ustr(tot_cust_payment_str)
 
             worksheet.merge_range(row, 1, row, 4,
                                   'Total - Cleared Deposits and Other Credits',
@@ -527,6 +531,11 @@ class WizBankReconciliationReport(models.TransientModel):
                 ])
                 for move_l in move_lines:
                     balance = move_l and move_l.balance or 0.0
+                    if currency_id:
+                        balance = move_l and move_l.amount_currency or 0.0
+                        if balance in [0.0, -0.0]:
+                            balance = move_l and move_l.balance or 0.0
+
                     tot_vend_payment = tot_vend_payment + balance or 0.0
                     payment_date = ''
                     if move_l and move_l.date:
@@ -623,11 +632,11 @@ class WizBankReconciliationReport(models.TransientModel):
 
             last_recon_bal_str = round(last_reconcile_bal, 2)
             if currency_position == 'after':
-                last_recon_bal_str = \
-                    ustr(last_recon_bal_str) + ustr(currency_symbol)
+                last_recon_bal_str = ustr(
+                    last_recon_bal_str) + ustr(currency_symbol)
             else:
-                last_recon_bal_str = \
-                    ustr(currency_symbol) + ustr(last_recon_bal_str)
+                last_recon_bal_str = ustr(
+                    currency_symbol) + ustr(last_recon_bal_str)
 
             worksheet.write(row, 5, last_recon_bal_str, cell_r_bold_noborder)
             row += 1
@@ -648,19 +657,15 @@ class WizBankReconciliationReport(models.TransientModel):
             unrec_tot_str = round(unrec_tot, 2)
             difference_str = round(0.0, 2)
             if currency_position == 'after':
-                re_st_bal_tot_str = \
-                    ustr(re_st_bal_tot_str) + ustr(currency_symbol)
-                unrec_tot_str = \
-                    ustr(unrec_tot_str) + ustr(currency_symbol)
-                difference_str = \
-                    ustr(difference_str) + ustr(currency_symbol)
+                re_st_bal_tot_str = ustr(re_st_bal_tot_str) + \
+                    ustr(currency_symbol)
+                unrec_tot_str = ustr(unrec_tot_str) + ustr(currency_symbol)
+                difference_str = ustr(difference_str) + ustr(currency_symbol)
             else:
-                re_st_bal_tot_str = \
-                    ustr(currency_symbol) + ustr(re_st_bal_tot_str)
-                unrec_tot_str = \
-                    ustr(currency_symbol) + ustr(unrec_tot_str)
-                difference_str = \
-                    ustr(currency_symbol) + ustr(difference_str)
+                re_st_bal_tot_str = ustr(currency_symbol) + \
+                    ustr(re_st_bal_tot_str)
+                unrec_tot_str = ustr(currency_symbol) + ustr(unrec_tot_str)
+                difference_str = ustr(currency_symbol) + ustr(difference_str)
 
             worksheet.write(row, 5, re_st_bal_tot_str, cell_r_bold_noborder)
             row += 1
@@ -687,14 +692,24 @@ class WizBankReconciliationReport(models.TransientModel):
                     if cust_unrecon_l.payment_id.payment_type in \
                             ['outbound', 'transfer']:
                         trns_type = 'Bill Payment'
+
+                cust_balance = cust_unrecon_l and cust_unrecon_l.balance or 0.0
+                if currency_id:
+                    cust_balance = cust_unrecon_l and \
+                        cust_unrecon_l.amount_currency or 0.0
+                    if cust_balance in [0.0, -0.0]:
+                        cust_balance = cust_unrecon_l and \
+                            cust_unrecon_l.balance or 0.0
+
                 tot_unreconcile_cust_payment = tot_unreconcile_cust_payment + \
-                    cust_unrecon_l.balance or 0.0
+                    cust_balance or 0.0
+
                 # journal = cust_pay.journal_id and \
                 #    cust_pay.journal_id.name or ''
                 payment_date = ''
                 if cust_unrecon_l.date:
-                    payment_date = \
-                        datetime.strftime(cust_unrecon_l.date, '%d-%m-%Y')
+                    payment_date = datetime.strftime(
+                        cust_unrecon_l.date, '%d-%m-%Y')
 
                 # cust_unrecon_pay_name = cust_unrecon_l.name or ''
                 partner = cust_unrecon_l.partner_id and \
@@ -734,7 +749,15 @@ class WizBankReconciliationReport(models.TransientModel):
                                 cell_l_fmat)
                 col += 1
 
-                cust_bal_str = round(cust_unrecon_l.balance, 2)
+                cust_balance = cust_unrecon_l and cust_unrecon_l.balance or 0.0
+                if currency_id:
+                    cust_balance = cust_unrecon_l and \
+                        cust_unrecon_l.amount_currency or 0.0
+                    if cust_balance in [0.0, -0.0]:
+                        cust_balance = cust_unrecon_l and \
+                            cust_unrecon_l.balance or 0.0
+
+                cust_bal_str = round(cust_balance, 2)
                 if currency_position == 'after':
                     cust_bal_str = ustr(cust_bal_str) + ustr(currency_symbol)
                 else:
@@ -747,11 +770,11 @@ class WizBankReconciliationReport(models.TransientModel):
 
             tot_unrec_cust_pay_str = round(tot_unreconcile_cust_payment, 2)
             if currency_position == 'after':
-                tot_unrec_cust_pay_str = \
-                    ustr(tot_unrec_cust_pay_str) + ustr(currency_symbol)
+                tot_unrec_cust_pay_str = ustr(
+                    tot_unrec_cust_pay_str) + ustr(currency_symbol)
             else:
-                tot_unrec_cust_pay_str = \
-                    ustr(currency_symbol) + ustr(tot_unrec_cust_pay_str)
+                tot_unrec_cust_pay_str = ustr(
+                    currency_symbol) + ustr(tot_unrec_cust_pay_str)
 
             worksheet.merge_range(row, 1, row, 4,
                                   'Total - Uncleared Checks and Payments',
