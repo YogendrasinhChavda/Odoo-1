@@ -185,8 +185,10 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                 # sales = sale_obj.browse(sales_ids)
 
                 sale_team_trg.sale_team_order_ids = [(6, 0, sales.ids)]
+                # sale_team_trg.sales_ord_trg_achived = \
+                #     sum([sale.amount_total for sale in sales]) or 0.0
                 sale_team_trg.sales_ord_trg_achived = \
-                    sum([sale.amount_total for sale in sales]) or 0.0
+                    sum([sale.amount_untaxed for sale in sales]) or 0.0
 
                 invoices = inv_obj.search([
                     ('date_invoice', '>=', sale_team_trg.date_from),
@@ -197,8 +199,11 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     ('company_id', '=', sale_team_trg.company_id and
                         sale_team_trg.company_id.id or False)])
                 sale_team_trg.sale_invoice_ids = [(6, 0, invoices.ids)]
+                # sale_team_trg.billed_inv_trg_achived = \
+                #     sum([sale_inv.amount_total
+                #          for sale_inv in invoices]) or 0.0
                 sale_team_trg.billed_inv_trg_achived = \
-                    sum([sale_inv.amount_total
+                    sum([sale_inv.amount_untaxed
                          for sale_inv in invoices]) or 0.0
 
     @api.multi
@@ -431,7 +436,7 @@ class SalesBilledInvoiceTarget(models.Model):
                 # sales = sale_obj.browse(sales_ids)
                 sale_person_trg.sale_person_order_ids = [(6, 0, sales.ids)]
                 sale_person_trg.sales_ord_trg_achived = \
-                    sum([sale.amount_total for sale in sales]) or 0.0
+                    sum([sale.amount_untaxed for sale in sales]) or 0.0
 
                 invoices = inv_obj.search([
                     ('date_invoice', '>=', sale_person_trg.date_from),
@@ -444,7 +449,7 @@ class SalesBilledInvoiceTarget(models.Model):
                     ('state', 'in', ['open', 'in_payment', 'paid'])])
                 sale_person_trg.sale_invoice_ids = [(6, 0, invoices.ids)]
                 sale_person_trg.billed_inv_trg_achived = \
-                    sum([sale_inv.amount_total
+                    sum([sale_inv.amount_untaxed
                          for sale_inv in invoices]) or 0.0
 
     # @api.depends('team_id', 'sales_user_id',
