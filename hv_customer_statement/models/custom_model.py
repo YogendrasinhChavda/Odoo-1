@@ -71,9 +71,10 @@ class hv_customer_account_invoice(models.Model):
     def get_client_order_ref(self):
         for invoice in self:
             if invoice.origin:
+                sale_order = self.env['sale.order'].search([
+                    ('name', '=', invoice.origin)], limit=1)
                 invoice.client_order_ref = \
-                    self.env['sale.order'].search([
-                        ('name', '=', invoice.origin)]).client_order_ref
+                    sale_order and sale_order.client_order_ref or ''
             else:
                 invoice.client_order_ref = ""
 
