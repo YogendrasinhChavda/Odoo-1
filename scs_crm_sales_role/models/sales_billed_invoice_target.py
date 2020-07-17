@@ -26,11 +26,11 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                                string="Regions",
                                store=True)
     sales_ord_trg_achived = fields.Float(
-        compute="_get_sales_teams_orders_and_invoice_info",
+        compute="get_sales_teams_orders_and_invoice_info",
         store=True,
         string="Sales Order Target Achived")
     billed_inv_trg_achived = fields.Float(
-        compute="_get_sales_teams_orders_and_invoice_info",
+        compute="get_sales_teams_orders_and_invoice_info",
         store=True,
         string="Billed Invoice Target Achived")
     sale_team_order_ids = fields.Many2many(
@@ -39,14 +39,14 @@ class SalesBilledInvoiceTargetTeam(models.Model):
         "sale_order_team_trg_id", "sale_order_id",
         store=True,
         string="Sale Teams Orders",
-        compute='_get_sales_teams_orders_and_invoice_info')
+        compute='get_sales_teams_orders_and_invoice_info')
     sale_invoice_ids = fields.Many2many(
         "account.invoice",
         "sales_invoice_team_target_rel",
         "sale_invoice_team_trg_id", "sale_invoice_id",
         store=True,
         string="Sale Teams Invoices",
-        compute='_get_sales_teams_orders_and_invoice_info')
+        compute='get_sales_teams_orders_and_invoice_info')
     state = fields.Selection([
         ('draft', 'Draft'),
         ('open', 'In Progress'),
@@ -150,7 +150,7 @@ class SalesBilledInvoiceTargetTeam(models.Model):
         'team_id.sale_team_invoice_ids',
         'team_id.sale_team_invoice_ids.state',
         'date_from', 'date_to', 'company_id')
-    def _get_sales_teams_orders_and_invoice_info(self):
+    def get_sales_teams_orders_and_invoice_info(self):
         sale_obj = self.env['sale.order']
         inv_obj = self.env['account.invoice']
         for sale_team_trg in self:
@@ -280,11 +280,11 @@ class SalesBilledInvoiceTarget(models.Model):
     #                            string="Regions",
     #                            store=True)
     sales_ord_trg_achived = fields.Float(
-        compute="_get_sales_persons_orders_and_invoice_info",
+        compute="get_sales_persons_orders_and_invoice_info",
         store=True,
         string="Sales Order Target Achived")
     billed_inv_trg_achived = fields.Float(
-        compute="_get_sales_persons_orders_and_invoice_info",
+        compute="get_sales_persons_orders_and_invoice_info",
         store=True,
         string="Billed Invoice Target Achived")
     sale_person_order_ids = fields.Many2many(
@@ -293,14 +293,14 @@ class SalesBilledInvoiceTarget(models.Model):
         "sale_ord_person_trg_id", "sale_order_id",
         string="Sale Teams Orders",
         store=True,
-        compute='_get_sales_persons_orders_and_invoice_info')
+        compute='get_sales_persons_orders_and_invoice_info')
     sale_invoice_ids = fields.Many2many(
         "account.invoice",
         "sales_invoice_person_target_rel",
         "sale_invoice_person_trg_id", "sale_invoice_id",
         string="Sale Teams Invoices",
         store=True,
-        compute='_get_sales_persons_orders_and_invoice_info')
+        compute='get_sales_persons_orders_and_invoice_info')
     state = fields.Selection([
         ('draft', 'Draft'),
         ('open', 'In Progress'),
@@ -394,7 +394,7 @@ class SalesBilledInvoiceTarget(models.Model):
                  'sales_user_id.sale_person_invoice_ids.state',
                  'sales_user_id.sale_person_invoice_ids.user_id',
                  'date_from', 'date_to', 'company_id')
-    def _get_sales_persons_orders_and_invoice_info(self):
+    def get_sales_persons_orders_and_invoice_info(self):
         sale_obj = self.env['sale.order']
         inv_obj = self.env['account.invoice']
         for sale_person_trg in self:
