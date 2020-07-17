@@ -120,36 +120,38 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                 crm_team_obj.search([('id', 'child_of', team_id.id)]).ids
         return team_ids
 
+    # @api.multi
+    # @api.depends(
+    #     'team_id',
+    #     'team_id.states_team_ids',
+    #     'team_id.states_team_ids.sale_team_orders_ids.invoice_status',
+    #     'team_id.states_team_ids.sale_team_orders_ids.team_id',
+    #     'team_id.states_team_ids.sale_team_orders_ids.client_order_ref',
+    #     'team_id.states_team_ids.sale_team_invoice_ids.team_id',
+    #     'team_id.states_team_ids.sale_team_orders_ids.state',
+    #     'team_id.states_team_ids.sale_team_invoice_ids.state',
+    #     'team_id.region_team_ids',
+    #     'team_id.region_team_ids.sale_team_orders_ids.invoice_status',
+    #     'team_id.region_team_ids.sale_team_orders_ids.team_id',
+    #     'team_id.region_team_ids.sale_team_orders_ids.client_order_ref',
+    #     'team_id.region_team_ids.sale_team_invoice_ids.team_id',
+    #     'team_id.region_team_ids.sale_team_orders_ids.state',
+    #     'team_id.region_team_ids.sale_team_invoice_ids.state',
+    #     'team_id.region_team_ids.states_team_ids',
+    #     'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.invoice_status',
+    #     'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.team_id',
+    #     'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.client_order_ref',
+    #     'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.team_id',
+    #     'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.state',
+    #     'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.state',
+    #     'team_id.sale_team_orders_ids',
+    #     'team_id.sale_team_orders_ids.invoice_status',
+    #     'team_id.sale_team_orders_ids.state',
+    #     'team_id.sale_team_orders_ids.client_order_ref',
+    #     'team_id.sale_team_invoice_ids',
+    #     'team_id.sale_team_invoice_ids.state',
+    #     'date_from', 'date_to', 'company_id')
     @api.multi
-    @api.depends(
-        'team_id', 'team_id.states_team_ids',
-        'team_id.states_team_ids.sale_team_orders_ids.invoice_status',
-        'team_id.states_team_ids.sale_team_orders_ids.team_id',
-        'team_id.states_team_ids.sale_team_orders_ids.client_order_ref',
-        'team_id.states_team_ids.sale_team_invoice_ids.team_id',
-        'team_id.states_team_ids.sale_team_orders_ids.state',
-        'team_id.states_team_ids.sale_team_invoice_ids.state',
-        'team_id.region_team_ids',
-        'team_id.region_team_ids.sale_team_orders_ids.invoice_status',
-        'team_id.region_team_ids.sale_team_orders_ids.team_id',
-        'team_id.region_team_ids.sale_team_orders_ids.client_order_ref',
-        'team_id.region_team_ids.sale_team_invoice_ids.team_id',
-        'team_id.region_team_ids.sale_team_orders_ids.state',
-        'team_id.region_team_ids.sale_team_invoice_ids.state',
-        'team_id.region_team_ids.states_team_ids',
-        'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.invoice_status',
-        'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.team_id',
-        'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.client_order_ref',
-        'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.team_id',
-        'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.state',
-        'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.state',
-        'team_id.sale_team_orders_ids',
-        'team_id.sale_team_orders_ids.invoice_status',
-        'team_id.sale_team_orders_ids.state',
-        'team_id.sale_team_orders_ids.client_order_ref',
-        'team_id.sale_team_invoice_ids',
-        'team_id.sale_team_invoice_ids.state',
-        'date_from', 'date_to', 'company_id')
     def get_sales_teams_orders_and_invoice_info(self):
         sale_obj = self.env['sale.order']
         inv_obj = self.env['account.invoice']
@@ -172,15 +174,15 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     ('client_order_ref', '!=', False),
                     ('company_id', '=', sale_team_trg.company_id and \
                         sale_team_trg.company_id.id or False)])
-                sales_ids = []
-                for sale in sales:
-                    if not sale.invoice_ids:
-                        sales_ids.append(sale.id)
-                    for inv in sale.invoice_ids:
-                        if inv and inv.state in ['draft', 'on_hold']:
-                            sales_ids.append(sale.id)
-                sales_ids = list(set(sales_ids))
-                sales = sale_obj.browse(sales_ids)
+                # sales_ids = []
+                # for sale in sales:
+                #     if not sale.invoice_ids:
+                #         sales_ids.append(sale.id)
+                #     for inv in sale.invoice_ids:
+                #         if inv and inv.state in ['draft', 'on_hold']:
+                #             sales_ids.append(sale.id)
+                # sales_ids = list(set(sales_ids))
+                # sales = sale_obj.browse(sales_ids)
 
                 sale_team_trg.sale_team_order_ids = [(6, 0, sales.ids)]
                 sale_team_trg.sales_ord_trg_achived = \
@@ -383,17 +385,18 @@ class SalesBilledInvoiceTarget(models.Model):
             self.date_from = s_date
             self.date_to = e_date
 
+    # @api.multi
+    # @api.depends('sales_user_id',
+    #              'sales_user_id.sale_person_orders_ids',
+    #              'sales_user_id.sale_person_orders_ids.invoice_status',
+    #              'sales_user_id.sale_person_orders_ids.client_order_ref',
+    #              'sales_user_id.sale_person_orders_ids.state',
+    #              'sales_user_id.sale_person_orders_ids.user_id',
+    #              'sales_user_id.sale_person_invoice_ids',
+    #              'sales_user_id.sale_person_invoice_ids.state',
+    #              'sales_user_id.sale_person_invoice_ids.user_id',
+    #              'date_from', 'date_to', 'company_id')
     @api.multi
-    @api.depends('sales_user_id',
-                 'sales_user_id.sale_person_orders_ids',
-                 'sales_user_id.sale_person_orders_ids.invoice_status',
-                 'sales_user_id.sale_person_orders_ids.client_order_ref',
-                 'sales_user_id.sale_person_orders_ids.state',
-                 'sales_user_id.sale_person_orders_ids.user_id',
-                 'sales_user_id.sale_person_invoice_ids',
-                 'sales_user_id.sale_person_invoice_ids.state',
-                 'sales_user_id.sale_person_invoice_ids.user_id',
-                 'date_from', 'date_to', 'company_id')
     def get_sales_persons_orders_and_invoice_info(self):
         sale_obj = self.env['sale.order']
         inv_obj = self.env['account.invoice']
@@ -417,15 +420,15 @@ class SalesBilledInvoiceTarget(models.Model):
                     ('company_id', '=', sale_person_trg.company_id and \
                         sale_person_trg.company_id.id or False),
                     ('state', 'in', ['sale', 'done'])])
-                sales_ids = []
-                for sale in sales:
-                    if not sale.invoice_ids:
-                        sales_ids.append(sale.id)
-                    for inv in sale.invoice_ids:
-                        if inv and inv.state in ['draft', 'on_hold']:
-                            sales_ids.append(sale.id)
-                sales_ids = list(set(sales_ids))
-                sales = sale_obj.browse(sales_ids)
+                # sales_ids = []
+                # for sale in sales:
+                #     if not sale.invoice_ids:
+                #         sales_ids.append(sale.id)
+                #     for inv in sale.invoice_ids:
+                #         if inv and inv.state in ['draft', 'on_hold']:
+                #             sales_ids.append(sale.id)
+                # sales_ids = list(set(sales_ids))
+                # sales = sale_obj.browse(sales_ids)
                 sale_person_trg.sale_person_order_ids = [(6, 0, sales.ids)]
                 sale_person_trg.sales_ord_trg_achived = \
                     sum([sale.amount_total for sale in sales]) or 0.0
