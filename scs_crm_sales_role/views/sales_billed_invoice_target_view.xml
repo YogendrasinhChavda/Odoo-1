@@ -8,7 +8,11 @@
         <field name="arch" type="xml">
             <form string="Sales Order vs Billed Invoice Target Team">
                 <header>
-                    <button name="action_open_target" type="object" states="draft"
+                    <button name="get_sales_teams_orders_and_invoice_info"
+                        type="object"
+                        string="Compute"
+                        class="oe_highlight"/>
+<!--                     <button name="action_open_target" type="object" states="draft"
                         string="In Progress" class="oe_highlight"/>
                     <button name="action_set_to_draft_target" type="object" states="open,done,cancel"
                         string="Set to Draft" class="oe_highlight"/>
@@ -16,7 +20,7 @@
                         string="Done" class="oe_highlight"/>
                     <button name="action_set_to_cancel" type="object" states="draft,open"
                         string="Cancel" class="oe_highlight"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/> -->
                 </header>
                 <sheet>
                     <group>
@@ -152,7 +156,11 @@
         <field name="arch" type="xml">
             <form string="Sales Order vs Billed Invoice Target">
                 <header>
-                    <button name="action_open_target" type="object" states="draft"
+                    <button name="get_sales_persons_orders_and_invoice_info"
+                        type="object"
+                        string="Compute"
+                        class="oe_highlight"/>
+<!--                     <button name="action_open_target" type="object" states="draft"
                         string="In Progress" class="oe_highlight"/>
                     <button name="action_set_to_draft_target" type="object" states="open,done,cancel"
                         string="Set to Draft" class="oe_highlight"/>
@@ -160,7 +168,7 @@
                         string="Done" class="oe_highlight"/>
                     <button name="action_set_to_cancel" type="object" states="draft,open"
                         string="Cancel" class="oe_highlight"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/> -->
                 </header>
                 <sheet>
                     <group>
