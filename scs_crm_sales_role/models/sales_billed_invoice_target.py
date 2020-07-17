@@ -125,27 +125,31 @@ class SalesBilledInvoiceTargetTeam(models.Model):
         'team_id', 'team_id.states_team_ids',
         'team_id.states_team_ids.sale_team_orders_ids.invoice_status',
         'team_id.states_team_ids.sale_team_orders_ids.team_id',
+        'team_id.states_team_ids.sale_team_orders_ids.client_order_ref',
         'team_id.states_team_ids.sale_team_invoice_ids.team_id',
         'team_id.states_team_ids.sale_team_orders_ids.state',
         'team_id.states_team_ids.sale_team_invoice_ids.state',
         'team_id.region_team_ids',
         'team_id.region_team_ids.sale_team_orders_ids.invoice_status',
         'team_id.region_team_ids.sale_team_orders_ids.team_id',
+        'team_id.region_team_ids.sale_team_orders_ids.client_order_ref',
         'team_id.region_team_ids.sale_team_invoice_ids.team_id',
         'team_id.region_team_ids.sale_team_orders_ids.state',
         'team_id.region_team_ids.sale_team_invoice_ids.state',
         'team_id.region_team_ids.states_team_ids',
         'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.invoice_status',
         'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.team_id',
+        'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.client_order_ref',
         'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.team_id',
         'team_id.region_team_ids.states_team_ids.sale_team_orders_ids.state',
         'team_id.region_team_ids.states_team_ids.sale_team_invoice_ids.state',
         'team_id.sale_team_orders_ids',
         'team_id.sale_team_orders_ids.invoice_status',
         'team_id.sale_team_orders_ids.state',
+        'team_id.sale_team_orders_ids.client_order_ref',
         'team_id.sale_team_invoice_ids',
         'team_id.sale_team_invoice_ids.state',
-        'date_from', 'date_to')
+        'date_from', 'date_to', 'company_id')
     def _get_sales_teams_orders_and_invoice_info(self):
         sale_obj = self.env['sale.order']
         inv_obj = self.env['account.invoice']
@@ -159,10 +163,15 @@ class SalesBilledInvoiceTargetTeam(models.Model):
             #     sale_team_trg.team_id.id or False
             if team_ids:
                 sales = sale_obj.search([
-                    ('confirmation_date', '>=', sale_team_trg.date_from),
-                    ('confirmation_date', '<=', sale_team_trg.date_to),
+                    # ('confirmation_date', '>=', sale_team_trg.date_from),
+                    # ('confirmation_date', '<=', sale_team_trg.date_to),
+                    ('create_date', '>=', sale_team_trg.date_from),
+                    ('create_date', '<=', sale_team_trg.date_to),
                     ('team_id', 'in', team_ids),
-                    ('state', 'in', ['sale', 'done'])])
+                    ('state', 'in', ['sale', 'done']),
+                    ('client_order_ref', '!=', False),
+                    ('company_id', '=', sale_team_trg.company_id and \
+                        sale_team_trg.company_id.id or False)])
                 sales_ids = []
                 for sale in sales:
                     if not sale.invoice_ids:
@@ -182,7 +191,9 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     ('date_invoice', '<=', sale_team_trg.date_to),
                     ('type', '=', 'out_invoice'),
                     ('team_id', 'in', team_ids),
-                    ('state', 'in', ['open', 'in_payment', 'paid'])])
+                    ('state', 'in', ['open', 'in_payment', 'paid']),
+                    ('company_id', '=', sale_team_trg.company_id and
+                        sale_team_trg.company_id.id or False)])
                 sale_team_trg.sale_invoice_ids = [(6, 0, invoices.ids)]
                 sale_team_trg.billed_inv_trg_achived = \
                     sum([sale_inv.amount_total
@@ -376,12 +387,13 @@ class SalesBilledInvoiceTarget(models.Model):
     @api.depends('sales_user_id',
                  'sales_user_id.sale_person_orders_ids',
                  'sales_user_id.sale_person_orders_ids.invoice_status',
+                 'sales_user_id.sale_person_orders_ids.client_order_ref',
                  'sales_user_id.sale_person_orders_ids.state',
                  'sales_user_id.sale_person_orders_ids.user_id',
                  'sales_user_id.sale_person_invoice_ids',
                  'sales_user_id.sale_person_invoice_ids.state',
                  'sales_user_id.sale_person_invoice_ids.user_id',
-                 'date_from', 'date_to')
+                 'date_from', 'date_to', 'company_id')
     def _get_sales_persons_orders_and_invoice_info(self):
         sale_obj = self.env['sale.order']
         inv_obj = self.env['account.invoice']
@@ -394,11 +406,16 @@ class SalesBilledInvoiceTarget(models.Model):
             #     sale_person_trg.team_id.id or False
             if sale_person:
                 sales = sale_obj.search([
-                    ('confirmation_date', '>=', sale_person_trg.date_from),
-                    ('confirmation_date', '<=', sale_person_trg.date_to),
-                    ('user_id', '=', sale_person),
                     # ('team_id', '=', team_id),
                     # ('invoice_status', '=', 'no'),
+                    # ('confirmation_date', '>=', sale_person_trg.date_from),
+                    # ('confirmation_date', '<=', sale_person_trg.date_to),
+                    ('create_date', '>=', sale_person_trg.date_from),
+                    ('create_date', '<=', sale_person_trg.date_to),
+                    ('user_id', '=', sale_person),
+                    ('client_order_ref', '!=', False),
+                    ('company_id', '=', sale_person_trg.company_id and \
+                        sale_person_trg.company_id.id or False),
                     ('state', 'in', ['sale', 'done'])])
                 sales_ids = []
                 for sale in sales:
@@ -419,6 +436,8 @@ class SalesBilledInvoiceTarget(models.Model):
                     ('type', '=', 'out_invoice'),
                     ('user_id', '=', sale_person),
                     # ('team_id', '=', team_id),
+                    ('company_id', '=', sale_person_trg.company_id and \
+                        sale_person_trg.company_id.id or False),
                     ('state', 'in', ['open', 'in_payment', 'paid'])])
                 sale_person_trg.sale_invoice_ids = [(6, 0, invoices.ids)]
                 sale_person_trg.billed_inv_trg_achived = \
