@@ -1,9 +1,19 @@
 """Sales Billed Invoice Target and Sales Billed Invoice Target Team Model."""
 
+import pytz
+from pytz import timezone
+# import calendar
 from datetime import datetime
 from odoo.tools import date_utils
 from odoo import api, fields, models, _
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DTF
 from odoo.exceptions import ValidationError
+
+
+def convert_dt_in_utc(convert_dt, user_tz):
+    """Convert Date in UTC timezone."""
+    now_utc_tz = convert_dt.astimezone(timezone('UTC'))
+    return now_utc_tz
 
 
 class SalesBilledInvoiceTargetTeam(models.Model):
@@ -153,6 +163,7 @@ class SalesBilledInvoiceTargetTeam(models.Model):
     #     'date_from', 'date_to', 'company_id')
     @api.multi
     def get_sales_teams_orders_and_invoice_info(self):
+        """Method to get the team orders and invoice info."""
         sale_obj = self.env['sale.order']
         inv_obj = self.env['account.invoice']
         for sale_team_trg in self:
@@ -164,11 +175,35 @@ class SalesBilledInvoiceTargetTeam(models.Model):
             # team_id = sale_team_trg.team_id and \
             #     sale_team_trg.team_id.id or False
             if team_ids:
+                st_dt = sale_team_trg.date_from
+                en_dt = sale_team_trg.date_to
+                if not st_dt or not en_dt:
+                    continue
+                if sale_team_trg.date_from:
+                    st_dt = st_dt.strftime('%Y-%m-%d')
+                    st_dt = datetime.strptime(st_dt, '%Y-%m-%d').\
+                        strftime('%Y-%m-%d 00:00:00')
+                    st_dt = datetime.strptime(st_dt, DTF)
+
+                    tz_t = pytz.timezone(self.env.user.tz)
+                    st_dt = st_dt.replace(tzinfo=tz_t)
+                    st_dt = convert_dt_in_utc(st_dt, self.env.user.tz)
+                if sale_team_trg.date_to:
+                    en_dt = en_dt.strftime('%Y-%m-%d')
+                    en_dt = datetime.strptime(en_dt, '%Y-%m-%d').\
+                        strftime('%Y-%m-%d 23:59:59')
+                    en_dt = datetime.strptime(en_dt, DTF)
+
+                    tz_t = pytz.timezone(self.env.user.tz)
+                    en_dt = en_dt.replace(tzinfo=tz_t)
+                    en_dt = convert_dt_in_utc(en_dt, self.env.user.tz)
+                # print("\n st_dt :::::2::::::", st_dt)
+                # print("\n en_dt :::::2::::::", en_dt)
                 sales = sale_obj.search([
                     # ('confirmation_date', '>=', sale_team_trg.date_from),
                     # ('confirmation_date', '<=', sale_team_trg.date_to),
-                    ('create_date', '>=', sale_team_trg.date_from),
-                    ('create_date', '<=', sale_team_trg.date_to),
+                    ('create_date', '>=', st_dt),
+                    ('create_date', '<=', en_dt),
                     ('team_id', 'in', team_ids),
                     ('state', 'in', ['sale', 'done']),
                     ('client_order_ref', '!=', False),
@@ -191,8 +226,8 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     sum([sale.amount_untaxed for sale in sales]) or 0.0
 
                 invoices = inv_obj.search([
-                    ('date_invoice', '>=', sale_team_trg.date_from),
-                    ('date_invoice', '<=', sale_team_trg.date_to),
+                    ('date_invoice', '>=', st_dt),
+                    ('date_invoice', '<=', en_dt),
                     ('type', '=', 'out_invoice'),
                     ('team_id', 'in', team_ids),
                     ('state', 'in', ['open', 'in_payment', 'paid']),
@@ -403,6 +438,7 @@ class SalesBilledInvoiceTarget(models.Model):
     #              'date_from', 'date_to', 'company_id')
     @api.multi
     def get_sales_persons_orders_and_invoice_info(self):
+        """Mtheod to get sales person wise order in invoice info."""
         sale_obj = self.env['sale.order']
         inv_obj = self.env['account.invoice']
         for sale_person_trg in self:
@@ -412,19 +448,47 @@ class SalesBilledInvoiceTarget(models.Model):
                 sale_person_trg.sales_user_id.id or False
             # team_id = sale_person_trg.team_id and \
             #     sale_person_trg.team_id.id or False
+            st_dt = sale_person_trg.date_from
+            en_dt = sale_person_trg.date_to
+            # print("\n st_dt :::::1::::::", st_dt)
+            # print("\n en_dt :::::1::::::", en_dt)
+            if not st_dt or not en_dt:
+                continue
+            if sale_person_trg.date_from:
+                st_dt = st_dt.strftime('%Y-%m-%d')
+                st_dt = datetime.strptime(st_dt, '%Y-%m-%d').\
+                    strftime('%Y-%m-%d 00:00:00')
+                st_dt = datetime.strptime(st_dt, DTF)
+
+                tz_t = pytz.timezone(self.env.user.tz)
+                st_dt = st_dt.replace(tzinfo=tz_t)
+                st_dt = convert_dt_in_utc(st_dt, self.env.user.tz)
+            if sale_person_trg.date_to:
+                en_dt = en_dt.strftime('%Y-%m-%d')
+                en_dt = datetime.strptime(en_dt, '%Y-%m-%d').\
+                    strftime('%Y-%m-%d 23:59:59')
+                en_dt = datetime.strptime(en_dt, DTF)
+
+                tz_t = pytz.timezone(self.env.user.tz)
+                en_dt = en_dt.replace(tzinfo=tz_t)
+                en_dt = convert_dt_in_utc(en_dt, self.env.user.tz)
+            # print("\n st_dt :::::2::::::", st_dt)
+            # print("\n en_dt :::::2::::::", en_dt)
             if sale_person:
                 sales = sale_obj.search([
                     # ('team_id', '=', team_id),
                     # ('invoice_status', '=', 'no'),
-                    # ('confirmation_date', '>=', sale_person_trg.date_from),
-                    # ('confirmation_date', '<=', sale_person_trg.date_to),
-                    ('create_date', '>=', sale_person_trg.date_from),
-                    ('create_date', '<=', sale_person_trg.date_to),
+                    # ('confirmation_date', '>=', st_dt),
+                    # ('confirmation_date', '<=', en_dt),
+                    ('create_date', '>=', st_dt),
+                    ('create_date', '<=', en_dt),
                     ('user_id', '=', sale_person),
                     ('client_order_ref', '!=', False),
                     ('company_id', '=', sale_person_trg.company_id and \
                         sale_person_trg.company_id.id or False),
-                    ('state', 'in', ['sale', 'done'])])
+                    ('state', 'in', ['sale', 'done']),
+                ])
+                # print("\n sales :::::::::::", len(sales))
                 # sales_ids = []
                 # for sale in sales:
                 #     if not sale.invoice_ids:
@@ -439,8 +503,8 @@ class SalesBilledInvoiceTarget(models.Model):
                     sum([sale.amount_untaxed for sale in sales]) or 0.0
 
                 invoices = inv_obj.search([
-                    ('date_invoice', '>=', sale_person_trg.date_from),
-                    ('date_invoice', '<=', sale_person_trg.date_to),
+                    ('date_invoice', '>=', st_dt),
+                    ('date_invoice', '<=', en_dt),
                     ('type', '=', 'out_invoice'),
                     ('user_id', '=', sale_person),
                     # ('team_id', '=', team_id),
