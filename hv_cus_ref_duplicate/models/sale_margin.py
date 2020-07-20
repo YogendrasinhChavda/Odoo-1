@@ -58,6 +58,7 @@ class SaleOrder(models.Model):
     x_studio_branch = fields.Char(string="Branch")
     # Below field moved from studio to here need motification
     x_studio_foc = fields.Selection([
+        ('r_and_d', 'R&D'),
         ('project_spares', 'Project Spares'),
         # ("specialised_projects", "Specialised Projects"),
         ("Sample", "Sample"),
