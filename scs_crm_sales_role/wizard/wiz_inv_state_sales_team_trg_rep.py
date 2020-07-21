@@ -303,9 +303,16 @@ class WizSalesTeamTargetReport(models.TransientModel):
         # partner_ids = sale_ids.mapped('partner_id')
         # team_ids = sale_ids.mapped('team_id')
         country_ids = acc_inv_l_ids.mapped('partner_id').mapped('country_id')
-        # state_ids = sale_ids.mapped('partner_id').mapped('state_id')
+        # state_ids = acc_inv_l_ids.mapped('partner_id').mapped('state_id')
         for country_id in country_obj.search([
                 ('id', 'in', country_ids.ids)], order="name"):
+            worksheet.set_row(row, 25)
+            # worksheet.set_default_row(20)
+            row_for_tot_bal = row
+            col_for_tot_bal = col
+            worksheet.write(row, col,
+                            country_id.name + " Actual", cell_bg_cou_actual)
+            row += 1
             # sale_country_ids = inv_obj.search([
             #     ('date_invoice', '>=', self.date_from),
             #     ('date_invoice', '<=', self.date_to),
@@ -325,30 +332,19 @@ class WizSalesTeamTargetReport(models.TransientModel):
                 ('x_studio_invoice_reference_status', 'not in',
                     ['draft', 'cancel'])])
 
-            # sale_team_ids = sale_country_ids.mapped('team_id')
-            state_ids = sale_country_ids.mapped('partner_id').\
-                mapped('state_id')
-            if not state_ids:
-                continue
-            worksheet.set_row(row, 25)
-            # worksheet.set_default_row(20)
-            row_for_tot_bal = row
-            col_for_tot_bal = col
-            worksheet.write(row, col,
-                            country_id.name + " Actual", cell_bg_cou_actual)
-            row += 1
-
-            for state_id in state_ids:
+            sale_team_ids = sale_country_ids.mapped('team_id')
+            # state_ids = sale_country_ids.\
+            #     mapped('partner_id').mapped('state_id')
+            for team_id in sale_team_ids:
                 worksheet.set_row(row, 20)
-                state_name = state_id.name + ' (' + ustr(state_id.code) + ' )'
                 worksheet.write(row, col,
-                                state_name + " Actual", cell_left_fmt)
+                                team_id.name + " Actual", cell_left_fmt)
                 # ----------------------------------------------------------
                 # Added Budget Team in file.
                 row += 1
                 worksheet.set_row(row, 20)
                 worksheet.write(row, col,
-                                state_name + " Budget", cell_left_color_fmt)
+                                team_id.name + " Budget", cell_left_color_fmt)
                 row -= 1
                 # ----------------------------------------------------------
 
@@ -400,8 +396,7 @@ class WizSalesTeamTargetReport(models.TransientModel):
                         ('x_studio_invoice_date', '>=', month_st_dt),
                         ('x_studio_invoice_date', '<=', month_en_dt),
                         ('partner_id.country_id', '=', country_id.id),
-                        ('partner_id.state_id', '=', state_id.id),
-                        # ('team_id', '=', team_id.id),
+                        ('team_id', '=', team_id.id),
                         ('company_id', '=', company),
                         ('account_id', 'ilike', '4000'),
                         ('x_studio_invoice_reference_status', 'not in',
@@ -414,11 +409,8 @@ class WizSalesTeamTargetReport(models.TransientModel):
                     sale_trg_budget_ids = trg_team_obj.search([
                         ('date_from', '>=', month_st_dt),
                         ('date_to', '<=', month_en_dt),
-                        # ('team_id', '=', team_id.id),
-                        ('country_id', '=', country_id.id),
-                        ('state_id', '=', state_id.id),
-                        ('company_id', '=', company)
-                    ])
+                        ('team_id', '=', team_id.id),
+                        ('company_id', '=', company)])
                     team_sales_budget_trg_tot = \
                         sum(sale_trg_budget_ids.mapped('sales_team_target'))
 
@@ -444,8 +436,7 @@ class WizSalesTeamTargetReport(models.TransientModel):
                         ('x_studio_invoice_date', '>=', prev_year_month_st_dt),
                         ('x_studio_invoice_date', '<=', prev_year_month_en_dt),
                         ('partner_id.country_id', '=', country_id.id),
-                        ('partner_id.state_id', '=', state_id.id),
-                        # ('team_id', '=', team_id.id),
+                        ('team_id', '=', team_id.id),
                         ('company_id', '=', company),
                         ('account_id', 'ilike', '4000'),
                         ('x_studio_invoice_reference_status', 'not in',
@@ -457,9 +448,7 @@ class WizSalesTeamTargetReport(models.TransientModel):
                     pre_sale_trg_budget_ids = trg_team_obj.search([
                         ('date_from', '>=', prev_year_month_st_dt),
                         ('date_to', '<=', prev_year_month_en_dt),
-                        # ('team_id', '=', team_id.id),
-                        ('country_id', '=', country_id.id),
-                        ('state_id', '=', state_id.id),
+                        ('team_id', '=', team_id.id),
                         ('company_id', '=', company)])
                     pre_team_sales_budget_trg_tot = \
                         sum(pre_sale_trg_budget_ids.

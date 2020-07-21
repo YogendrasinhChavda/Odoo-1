@@ -11,15 +11,27 @@
                     <attribute name="string">Sales Person</attribute>
                     <attribute name="placeholder">Sales Person</attribute>
                 </xpath>
-                <xpath expr="//field[@name='user_id']" position="after">
+  <!--               <xpath expr="//field[@name='user_id']" position="after">
                     <field name="team_id" placeholder="Sales Team"/>
-                </xpath>
+                </xpath> -->
                 <xpath expr="//field[@name='vat']" position="after">
                     <field name="member_no" placeholder="Enter Member Number..."/>
                 </xpath>
          <!--        <xpath expr="//group[@name='purchase']/field[@name='supplier']" position="after">
                     <field name="x_studio_plumber_1"/>
                 </xpath> -->
+            </field>
+        </record>
+
+        <!-- Inherited Res Partner Form view from delivery module. -->
+        <record id="view_partner_property_form_team_inherit" model="ir.ui.view">
+            <field name="name">res.partner.carrier.property.form.team.inherit</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="delivery.view_partner_property_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='property_delivery_carrier_id']" position="before">
+                    <field name="team_id" placeholder="Sales Team" string="Sales Team"/>
+                </xpath>
             </field>
         </record>
     </data>

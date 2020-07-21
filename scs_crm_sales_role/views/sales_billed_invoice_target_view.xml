@@ -8,7 +8,11 @@
         <field name="arch" type="xml">
             <form string="Sales Order vs Billed Invoice Target Team">
                 <header>
-                    <button name="action_open_target" type="object" states="draft"
+                    <button name="get_sales_teams_orders_and_invoice_info"
+                        type="object"
+                        string="Compute"
+                        class="oe_highlight"/>
+<!--                     <button name="action_open_target" type="object" states="draft"
                         string="In Progress" class="oe_highlight"/>
                     <button name="action_set_to_draft_target" type="object" states="open,done,cancel"
                         string="Set to Draft" class="oe_highlight"/>
@@ -16,13 +20,19 @@
                         string="Done" class="oe_highlight"/>
                     <button name="action_set_to_cancel" type="object" states="draft,open"
                         string="Cancel" class="oe_highlight"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/> -->
                 </header>
                 <sheet>
                     <group>
                         <group>
                             <field name="company_id" required="1"/>
-                            <field name="team_id" required="1" domain="[('company_id','=', company_id)]"/>
+                            <field name="team_id" required="1"
+                                domain="[('company_id','=', company_id)]"/>
+                            <field name="country_id"
+                                options="{'no_create': True, 'no_open': True}"/>
+                            <field name="state_id"
+                                options="{'no_create': True, 'no_open': True}"
+                                domain="[('country_id', '=', country_id)]"/>
                             <field name="regions"/>
                             <field name="time_span" required="1"/>
                             <field name="date_from" required="1"/>
@@ -56,11 +66,16 @@
         <field name="arch" type="xml">
             <tree string="Sales Order vs Billed Invoice Target">
                 <field name="team_id" required="1" domain="[('company_id','=', company_id)]"/>
+                <field name="country_id"
+                    options="{'no_create': True, 'no_open': True}"/>
+                <field name="state_id"
+                    options="{'no_create': True, 'no_open': True}"
+                    domain="[('country_id', '=', country_id)]"/>
                 <field name="regions"/>
-                <field name="sales_team_target"/>
                 <field name="time_span"/>
                 <field name="date_from"/>
                 <field name="date_to"/>
+                <field name="sales_team_target"/>
                 <field name="sales_ord_trg_achived"/>
                 <field name="billed_inv_trg_achived"/>
                 <field name="state"/>
@@ -76,6 +91,8 @@
         <field name="arch" type="xml">
             <search string="Sales Order vs Billed Invoice Target">
                 <field name="team_id"/>
+                <field name="country_id"/>
+                <field name="state_id"/>
                 <field name="regions"/>
                 <field name="time_span"/>
                 <field name="date_from"/>
@@ -139,7 +156,11 @@
         <field name="arch" type="xml">
             <form string="Sales Order vs Billed Invoice Target">
                 <header>
-                    <button name="action_open_target" type="object" states="draft"
+                    <button name="get_sales_persons_orders_and_invoice_info"
+                        type="object"
+                        string="Compute"
+                        class="oe_highlight"/>
+<!--                     <button name="action_open_target" type="object" states="draft"
                         string="In Progress" class="oe_highlight"/>
                     <button name="action_set_to_draft_target" type="object" states="open,done,cancel"
                         string="Set to Draft" class="oe_highlight"/>
@@ -147,7 +168,7 @@
                         string="Done" class="oe_highlight"/>
                     <button name="action_set_to_cancel" type="object" states="draft,open"
                         string="Cancel" class="oe_highlight"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,done"/> -->
                 </header>
                 <sheet>
                     <group>
@@ -194,10 +215,10 @@
                <!--  <field name="team_id" required="1"/>
                 <field name="regions"/> -->
                 <field name="sales_user_id" required="1" domain="[('company_id','=', company_id)]"/>
-                <field name="sales_person_target"/>
                 <field name="time_span"/>
                 <field name="date_from"/>
                 <field name="date_to"/>
+                <field name="sales_person_target"/>
                 <field name="sales_ord_trg_achived"/>
                 <field name="billed_inv_trg_achived"/>
                 <field name="state"/>

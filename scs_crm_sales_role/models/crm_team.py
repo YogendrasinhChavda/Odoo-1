@@ -1,6 +1,6 @@
 """CRM Team Model."""
 
-from odoo import fields, models
+from odoo import fields, models, api
 
 
 class ResUsers(models.Model):
@@ -55,10 +55,6 @@ class CrmTeam(models.Model):
     sale_team_invoice_ids = fields.One2many('account.invoice', 'team_id',
                                             string="Sales Team Invoices")
 
-    # @api.onchange('levels')
-    # def onchange_levels(self):
-    #     """Onchange method to set the """
-
 
 class CrmLead(models.Model):
     """CRM Lead Model."""
@@ -68,3 +64,25 @@ class CrmLead(models.Model):
     # cust_state_id = fields.Many2one(related="partner_id.state_id",
     #                                 store=True,
     #                                 string='Customer State')
+
+
+# class SaleOrder(models.Model):
+#     """Sale Order Model."""
+
+#     _inherit = "sale.order"
+
+#     @api.model
+#     def read_group(self, domain, fields, groupby, offset=0,
+#                    limit=None, orderby=False, lazy=True):
+#         """Override read_group method."""
+#         print("\n self :::::::::::::::", self, self._context)
+#         print("\n domain :::::::::::::::", domain)
+#         print("\n fields :::::::::::::", fields)
+#         print("\n groupby :::::::::::::", groupby)
+#         print("\n offset :::::::::::::", offset)
+#         print("\n limit :::::::::::::", limit)
+#         print("\n orderby :::::::::::::", orderby)
+#         print("\n lazy :::::::::::::", lazy)
+#         return super(SaleOrder, self).read_group(domain, fields, groupby,
+#                                                  offset=offset, limit=limit,
+#                                                  orderby=orderby, lazy=lazy)
