@@ -205,7 +205,8 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     ('create_date', '>=', st_dt),
                     ('create_date', '<=', en_dt),
                     ('team_id', 'in', team_ids),
-                    ('state', 'in', ['sale', 'done']),
+                    # ('state', 'in', ['sale', 'done']),
+                    ('state', 'not in', ['cancel']),
                     ('client_order_ref', '!=', False),
                     ('company_id', '=', sale_team_trg.company_id and \
                         sale_team_trg.company_id.id or False)])
