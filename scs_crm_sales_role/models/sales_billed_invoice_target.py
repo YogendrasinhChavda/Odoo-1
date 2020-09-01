@@ -22,6 +22,7 @@ class SalesBilledInvoiceTargetTeam(models.Model):
     _name = "sales.billed.invoice.target.team"
     _description = "Sales Billed Invoice Target Team"
     _rec_name = 'team_id'
+    _order = 'id desc'
 
     sales_team_target = fields.Float(string="Sales Team Target")
     time_span = fields.Selection([('monthly', 'Monthly'),
@@ -86,6 +87,21 @@ class SalesBilledInvoiceTargetTeam(models.Model):
             if rec.date_from > rec.date_to:
                 raise ValidationError(_("Start Date must be less than Or \
                     Equal to End Date !!"))
+
+    @api.constrains('date_from', 'date_to', 'team_id')
+    def _check_duplicate_sales_team_target(self):
+        team_trg_obj = self.env['sales.billed.invoice.target.team']
+        for rec in self:
+            dup_trg_rec = team_trg_obj.search([
+                ('id', '!=', rec.id),
+                ('team_id', '=', rec.team_id and rec.team_id.id),
+                ('date_from', '>=', rec.date_from),
+                ('date_to', '<=', rec.date_to)
+            ])
+            if dup_trg_rec:
+                raise ValidationError(
+                    _("You can't create sales team target twice"
+                        " for same team with same date range !!"))
 
     @api.onchange('company_id')
     def onchange_company_id(self):
@@ -227,8 +243,8 @@ class SalesBilledInvoiceTargetTeam(models.Model):
                     sum([sale.amount_untaxed for sale in sales]) or 0.0
 
                 invoices = inv_obj.search([
-                    ('date_invoice', '>=', st_dt),
-                    ('date_invoice', '<=', en_dt),
+                    ('date_invoice', '>=', sale_team_trg.date_from),
+                    ('date_invoice', '<=', sale_team_trg.date_to),
                     ('type', '=', 'out_invoice'),
                     ('team_id', 'in', team_ids),
                     ('state', 'in', ['open', 'in_payment', 'paid']),
@@ -304,6 +320,7 @@ class SalesBilledInvoiceTarget(models.Model):
     _name = "sales.billed.invoice.target"
     _description = "Sales Billed Invoice Target Person"
     _rec_name = 'sales_user_id'
+    _order = 'id desc'
 
     sales_user_id = fields.Many2one("res.users", string="Sales Person")
     # sales_user_ids = fields.Many2many("res.users",
@@ -374,6 +391,30 @@ class SalesBilledInvoiceTarget(models.Model):
             if rec.date_from > rec.date_to:
                 raise ValidationError(_("Start Date must be less than Or \
                     Equal to End Date !!"))
+
+    @api.constrains('date_from', 'date_to', 'sales_user_id')
+    def _check_duplicate_sales_person_target(self):
+        sales_per_trg_obj = self.env['sales.billed.invoice.target']
+        for rec in self:
+            dup_trg_rec = sales_per_trg_obj.search([
+                ('id', '!=', rec.id),
+                ('sales_user_id', '=', rec.sales_user_id and
+                    rec.sales_user_id.id),
+                ('date_from', '>=', rec.date_from),
+                ('date_to', '<=', rec.date_to)
+            ])
+            # if not dup_trg_rec:
+            #     dup_trg_rec = sales_per_trg_obj.search([
+            #         ('id', '!=', rec.id),
+            #         ('sales_user_id', '=', rec.sales_user_id and
+            #             rec.sales_user_id.id),
+            #         ('date_to', '>=', rec.date_to),
+            #         ('date_to', '<=', rec.date_to)
+            #     ])
+            if dup_trg_rec:
+                raise ValidationError(
+                    _("You can't create salesperson target twice"
+                        " for same salesperson with same date range !!"))
 
     @api.multi
     def action_open_target(self):
@@ -488,6 +529,7 @@ class SalesBilledInvoiceTarget(models.Model):
                     ('company_id', '=', sale_person_trg.company_id and \
                         sale_person_trg.company_id.id or False),
                     ('state', 'in', ['sale', 'done']),
+                    # ('state', 'not in', ['cancel']),
                 ])
                 # print("\n sales :::::::::::", len(sales))
                 # sales_ids = []
@@ -504,8 +546,8 @@ class SalesBilledInvoiceTarget(models.Model):
                     sum([sale.amount_untaxed for sale in sales]) or 0.0
 
                 invoices = inv_obj.search([
-                    ('date_invoice', '>=', st_dt),
-                    ('date_invoice', '<=', en_dt),
+                    ('date_invoice', '>=', sale_person_trg.date_from),
+                    ('date_invoice', '<=', sale_person_trg.date_to),
                     ('type', '=', 'out_invoice'),
                     ('user_id', '=', sale_person),
                     # ('team_id', '=', team_id),
