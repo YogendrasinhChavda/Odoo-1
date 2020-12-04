@@ -60,6 +60,7 @@ class SaleOrder(models.Model):
     x_studio_foc = fields.Selection([
         ('r_and_d', 'R&D'),
         ('project_spares', 'Project Spares'),
+        ('blacktown_hospital', 'Blacktown Hospital Rectification'),
         # ("specialised_projects", "Specialised Projects"),
         ("Sample", "Sample"),
         ("Marketing", "Marketing"),
